@@ -1,15 +1,16 @@
 {
   "sessionId": "2026-06-23-general",
   "startedAt": "2026-06-23T00:00:00Z",
-  "endedAt": null,
-  "status": "active",
+  "endedAt": "2026-06-23T00:30:00Z",
+  "status": "ended",
   "focus": "general",
   "completedTasks": [
     "PRDIntake — Gappeo_Assignment.md imported and structured",
     "PRDValidate — two rounds, from 52% to 81% (validated)",
     "PO Q&A — all 10 blocking decisions resolved",
     "Data model finalized — Job, Candidate, CandidateJobApplication, Recruiter fields locked",
-    "AI output contract defined — resume parsing schema + fit scoring schema"
+    "AI output contract defined — resume parsing schema + fit scoring schema",
+    "Session housekeeping — planning docs committed, working tree cleaned"
   ],
   "pendingTasks": [
     "Initialize git repo",
