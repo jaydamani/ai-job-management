@@ -4,9 +4,11 @@ slug: gappeo-recruiter-management-system
 source: file://Gappeo_Assignment.md
 initiative_id: null
 imported_at: "2026-06-22T00:00:00Z"
-status: validated
+status: enriched
 validation_report: docs/planning/prds/gappeo-recruiter-management-system-validation.md
 validation_score: 81
+enrichment_report: docs/planning/prds/gappeo-recruiter-management-system-enrichment.md
+enriched_at: "2026-06-23T00:00:00Z"
 author: unknown
 version: "1.1"
 ---
@@ -64,7 +66,7 @@ Recruiters need a centralized tool to manage job openings and evaluate candidate
 | source | string | No | How the candidate was sourced (e.g., LinkedIn, referral, job board) |
 | referred_by | string | No | Name of referrer, if applicable |
 | notes | text | No | Recruiter free-text notes |
-| resume_path | string | No | Server-side path to uploaded resume file |
+| resume_s3_key | string | No | S3 object key for the uploaded resume file |
 | created_at | timestamp | System | Auto-set |
 | updated_at | timestamp | System | Auto-set |
 
@@ -91,6 +93,17 @@ Recruiters need a centralized tool to manage job openings and evaluate candidate
 | email | string | Yes | Unique — used for login |
 | password_hash | string | System | bcrypt hash — never returned in API responses |
 | name | string | No | Display name |
+| created_at | timestamp | System | Auto-set |
+
+### RefreshToken
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| id | UUID | System | Primary key |
+| recruiter_id | UUID | Yes | FK to Recruiter |
+| token_hash | string | Yes | bcrypt hash of the refresh token — raw token never stored |
+| expires_at | timestamp | Yes | Expiry time |
+| revoked | boolean | System | `false` by default; set to `true` on logout |
 | created_at | timestamp | System | Auto-set |
 
 ## Requirements
@@ -155,7 +168,7 @@ Recruiters need a centralized tool to manage job openings and evaluate candidate
 |----|-------------|----------|
 | DOCK-1 | Entire app (backend + frontend + database) runs with `docker-compose up` | MUST |
 | DOCK-2 | No manual setup required beyond creating a `.env` file from `.env.example` | MUST |
-| DOCK-3 | Resume upload volume is mounted persistently so files survive container restarts | MUST |
+| DOCK-3 | MinIO container data is mounted to a named volume so uploaded resumes survive container restarts | MUST |
 
 ### Deployment
 
@@ -217,8 +230,8 @@ Recruiters need a centralized tool to manage job openings and evaluate candidate
 ## Constraints
 
 - **Stack is fixed:** FastAPI · PostgreSQL · React · TypeScript · JWT Auth · Docker Compose
-- **AI API:** Claude API (`claude-sonnet-4-6`) for resume parsing and fit scoring
-- **File uploads:** PDF only, 5 MB max, server-side MIME validation; stored in a Docker volume
+- **AI API:** LiteLLM for provider-agnostic completions; default model `claude-sonnet-4-6`, overridable via `AI_MODEL` env var; **multimodal** — PDF bytes sent directly as a base64 `document` content block, no text pre-extraction step; eliminates image-only (scanned) PDF failures; Claude-native, falls back to text extraction for non-Claude providers
+- **File uploads:** PDF only, 5 MB max, server-side MIME validation; stored in S3/MinIO (`S3_ENDPOINT_URL` overrides to local MinIO in dev)
 - **Pagination:** Infinite scroll / cursor-based pagination, 20 items per fetch
 - **Auth:** 15-minute access tokens + refresh tokens; bcrypt password hashing; server-side refresh token invalidation on logout
 - **Authorization:** Per-recruiter data isolation — each recruiter sees only their own records
