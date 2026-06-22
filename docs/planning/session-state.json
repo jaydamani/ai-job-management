@@ -1,0 +1,27 @@
+{
+  "sessionId": "2026-06-22-general",
+  "startedAt": "2026-06-22T00:00:00Z",
+  "status": "active",
+  "focus": "general",
+  "pendingTasks": [
+    "Initialize git repo",
+    "Backend scaffold: FastAPI + SQLAlchemy + Alembic + project structure",
+    "Module 1 - Auth: register/login JWT, protected routes",
+    "Module 2 - Jobs: CRUD + list/filter",
+    "Module 3 - Candidates: CRUD + resume upload + AI parsing + fit scoring",
+    "Module 4 - Frontend: React/TypeScript UI",
+    "Module 5 - Docker: docker-compose + Dockerfiles",
+    ".env.example + README"
+  ],
+  "completedTasks": [],
+  "backlogTasks": [
+    "Bulk resume upload with ranking (bonus)",
+    "Deploy to free-tier cloud"
+  ],
+  "integrations": {},
+  "project": {
+    "name": "gappeo",
+    "stack": ["FastAPI", "PostgreSQL", "React", "TypeScript", "JWT", "Docker", "Claude API"],
+    "aiModel": "claude-sonnet-4-6"
+  }
+}
