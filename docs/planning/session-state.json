@@ -1,23 +1,40 @@
 {
-  "sessionId": "2026-06-22-general",
-  "startedAt": "2026-06-22T00:00:00Z",
+  "sessionId": "2026-06-23-general",
+  "startedAt": "2026-06-23T00:00:00Z",
+  "endedAt": null,
   "status": "active",
   "focus": "general",
+  "completedTasks": [
+    "PRDIntake — Gappeo_Assignment.md imported and structured",
+    "PRDValidate — two rounds, from 52% to 81% (validated)",
+    "PO Q&A — all 10 blocking decisions resolved",
+    "Data model finalized — Job, Candidate, CandidateJobApplication, Recruiter fields locked",
+    "AI output contract defined — resume parsing schema + fit scoring schema"
+  ],
   "pendingTasks": [
     "Initialize git repo",
+    "PRDEnrich — technical spec (DDL, API contract, AI prompt design)",
     "Backend scaffold: FastAPI + SQLAlchemy + Alembic + project structure",
-    "Module 1 - Auth: register/login JWT, protected routes",
-    "Module 2 - Jobs: CRUD + list/filter",
-    "Module 3 - Candidates: CRUD + resume upload + AI parsing + fit scoring",
+    "Module 1 - Auth: register/login, JWT 15min + refresh token, bcrypt, server-side revocation",
+    "Module 2 - Jobs: CRUD + filter (status, title, department, location, employment_type, experience_level, remote_type)",
+    "Module 3 - Candidates: CRUD + PDF upload + AI parsing/scoring + pipeline status",
     "Module 4 - Frontend: React/TypeScript UI",
     "Module 5 - Docker: docker-compose + Dockerfiles",
     ".env.example + README"
   ],
-  "completedTasks": [],
   "backlogTasks": [
     "Bulk resume upload with ranking (bonus)",
     "Deploy to free-tier cloud"
   ],
+  "prdIntake": {
+    "prd": "gappeo-recruiter-management-system",
+    "file": "docs/planning/prds/gappeo-recruiter-management-system.md",
+    "status": "validated",
+    "score": 81,
+    "importedAt": "2026-06-22T00:00:00Z",
+    "initiativeId": null,
+    "nextStep": "/PRDEnrich"
+  },
   "integrations": {},
   "project": {
     "name": "gappeo",
