@@ -1,7 +1,6 @@
 import uuid
 from sqlalchemy import Column, Text
-from sqlalchemy.dialects.postgresql import UUID, TIMESTAMPTZ
-from sqlalchemy.sql import func
+from sqlalchemy.dialects.postgresql import UUID
 from app.models.base import Base
 
 
@@ -12,4 +11,3 @@ class Recruiter(Base):
     email = Column(Text, nullable=False, unique=True)
     password_hash = Column(Text, nullable=False)
     name = Column(Text, nullable=False)
-    created_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now())

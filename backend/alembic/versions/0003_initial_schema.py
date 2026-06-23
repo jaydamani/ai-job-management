@@ -25,7 +25,7 @@ def upgrade() -> None:
         sa.Column("email", sa.Text, nullable=False, unique=True),
         sa.Column("password_hash", sa.Text, nullable=False),
         sa.Column("name", sa.Text, nullable=False),
-        sa.Column("created_at", postgresql.TIMESTAMPTZ, nullable=False, server_default=sa.text("NOW()")),
+        sa.Column("created_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
     )
     op.create_index("idx_recruiters_email", "recruiters", ["email"])
 
@@ -34,9 +34,9 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column("recruiter_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("recruiters.id", ondelete="CASCADE"), nullable=False),
         sa.Column("token_hash", sa.Text, nullable=False),
-        sa.Column("expires_at", postgresql.TIMESTAMPTZ, nullable=False),
+        sa.Column("expires_at", postgresql.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("revoked", sa.Boolean, nullable=False, server_default=sa.text("FALSE")),
-        sa.Column("created_at", postgresql.TIMESTAMPTZ, nullable=False, server_default=sa.text("NOW()")),
+        sa.Column("created_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
     )
     op.create_index("idx_refresh_tokens_recruiter", "refresh_tokens", ["recruiter_id"])
     op.create_index("idx_refresh_tokens_lookup", "refresh_tokens", ["recruiter_id", "revoked", "expires_at"])
@@ -56,8 +56,8 @@ def upgrade() -> None:
         sa.Column("experience_level", sa.Enum("junior", "mid", "senior", "lead", name="experience_level_enum", create_type=False)),
         sa.Column("remote_type", sa.Enum("onsite", "hybrid", "remote", name="remote_type_enum", create_type=False)),
         sa.Column("status", sa.Enum("open", "closed", name="job_status_enum", create_type=False), nullable=False, server_default=sa.text("'open'")),
-        sa.Column("created_at", postgresql.TIMESTAMPTZ, nullable=False, server_default=sa.text("NOW()")),
-        sa.Column("updated_at", postgresql.TIMESTAMPTZ, nullable=False, server_default=sa.text("NOW()")),
+        sa.Column("created_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
+        sa.Column("updated_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
         sa.CheckConstraint("salary_min IS NULL OR salary_max IS NULL OR salary_min <= salary_max", name="chk_salary_range"),
     )
     op.create_index("idx_jobs_recruiter_status", "jobs", ["recruiter_id", "status"])
@@ -83,8 +83,8 @@ def upgrade() -> None:
         sa.Column("referred_by", sa.Text),
         sa.Column("notes", sa.Text),
         sa.Column("resume_s3_key", sa.Text),
-        sa.Column("created_at", postgresql.TIMESTAMPTZ, nullable=False, server_default=sa.text("NOW()")),
-        sa.Column("updated_at", postgresql.TIMESTAMPTZ, nullable=False, server_default=sa.text("NOW()")),
+        sa.Column("created_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
+        sa.Column("updated_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
         sa.CheckConstraint(
             "expected_salary_min IS NULL OR expected_salary_max IS NULL OR expected_salary_min <= expected_salary_max",
             name="chk_expected_salary",
@@ -104,8 +104,8 @@ def upgrade() -> None:
         sa.Column("fit_explanation", sa.Text),
         sa.Column("ai_parsed_resume", postgresql.JSONB),
         sa.Column("interview_notes", sa.Text),
-        sa.Column("applied_at", postgresql.TIMESTAMPTZ, nullable=False, server_default=sa.text("NOW()")),
-        sa.Column("updated_at", postgresql.TIMESTAMPTZ, nullable=False, server_default=sa.text("NOW()")),
+        sa.Column("applied_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
+        sa.Column("updated_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
         sa.UniqueConstraint("candidate_id", "job_id", name="uq_candidate_job"),
     )
     op.create_index("idx_apps_job_fitscore", "candidate_job_applications", ["job_id", sa.text("fit_score DESC NULLS LAST")])

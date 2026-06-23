@@ -1,7 +1,6 @@
 import uuid
 from sqlalchemy import Column, Text, Integer, Date, CheckConstraint, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, TIMESTAMPTZ
-from sqlalchemy.sql import func
+from sqlalchemy.dialects.postgresql import UUID
 from app.models.base import Base
 
 
@@ -25,8 +24,6 @@ class Candidate(Base):
     referred_by = Column(Text)
     notes = Column(Text)
     resume_s3_key = Column(Text)
-    created_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now())
-    updated_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now())
 
     __table_args__ = (
         CheckConstraint(

@@ -1,8 +1,7 @@
 import uuid
 from sqlalchemy import Column, Text, Integer, ARRAY, String, CheckConstraint, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, TIMESTAMPTZ
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy import Enum as SAEnum
-from sqlalchemy.sql import func
 from app.models.base import Base
 
 employment_type_enum = SAEnum(
@@ -43,8 +42,6 @@ class Job(Base):
     experience_level = Column(experience_level_enum)
     remote_type = Column(remote_type_enum)
     status = Column(job_status_enum, nullable=False, server_default="open")
-    created_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now())
-    updated_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now())
 
     __table_args__ = (
         CheckConstraint(

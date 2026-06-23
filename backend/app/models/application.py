@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy import Column, Integer, Text, CheckConstraint, UniqueConstraint, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, TIMESTAMPTZ, JSONB
+from sqlalchemy.dialects.postgresql import UUID, TIMESTAMP, JSONB
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.sql import func
 from app.models.base import Base
@@ -23,8 +23,7 @@ class CandidateJobApplication(Base):
     fit_explanation = Column(Text)
     ai_parsed_resume = Column(JSONB)
     interview_notes = Column(Text)
-    applied_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now())
-    updated_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now())
+    applied_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
 
     __table_args__ = (
         CheckConstraint("fit_score BETWEEN 0 AND 100", name="chk_fit_score_range"),
