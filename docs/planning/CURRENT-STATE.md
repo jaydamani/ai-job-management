@@ -1,8 +1,8 @@
 # Current State — Gappeo
 
-**Last updated:** 2026-06-23
+**Last updated:** 2026-06-24
 **Branch:** master
-**Overall status:** Pre-implementation — PRD enriched, all decisions locked, ready for backend scaffold
+**Overall status:** Backend complete — all 3 backend modules + infra scaffolded; frontend next
 
 ## PRD Status
 
@@ -13,28 +13,33 @@
 
 ## Module Build Status
 
-| Module | Status |
-|--------|--------|
-| Project scaffold / git | ❌ Not started |
-| Auth (JWT + refresh tokens) | ❌ Not started |
-| Jobs (CRUD + filter) | ❌ Not started |
-| Candidates (CRUD + AI + pipeline) | ❌ Not started |
-| Frontend (React/TS) | ❌ Not started |
-| Docker (compose + Dockerfiles + Nginx) | ❌ Not started |
-| .env.example + README | ❌ Not started |
+| Module | Status | Notes |
+|--------|--------|-------|
+| Project scaffold / git | ✅ Complete | FastAPI + SQLAlchemy async + Alembic + all service layers |
+| Auth (JWT + refresh tokens) | ✅ Complete | JWT-wrapped refresh token UUID, bcrypt rounds=12, server-side revocation |
+| Jobs (CRUD + filter) | ✅ Complete | 7 query filters, cursor pagination, GIN trgm index on title |
+| Candidates (CRUD + AI + pipeline) | ✅ Complete | PDF upload, multimodal AI parse/score, fit_score cursor for job candidates |
+| Alembic migrations | ✅ Complete | 4 migrations: enums → trigger fn → schema + indexes → triggers |
+| Docker / Infra | ✅ Complete | docker-compose, nginx, Dockerfile, .env.example |
+| Frontend (React/TS) | ❌ Not started | Next task |
+| README.md | ❌ Not started | After frontend |
 
-## Key Decisions
+## Key Architecture Decisions (locked)
 
-- **Authz:** Per-recruiter isolation (404 on cross-access)
-- **JWT:** 15-min access + refresh token (30-day TTL); revocation via `refresh_tokens` DB table (token stored hashed); refresh token is itself a JWT containing `refresh_token_id` for O(1) lookup
+- **Auth:** JWT 15-min access + 30-day refresh; refresh stored as bcrypt hash in `refresh_tokens`; token is itself a JWT containing `jti` (UUID) for O(1) lookup + single bcrypt compare
 - **Candidate–Job:** Many-to-many via `CandidateJobApplication`; `UNIQUE(candidate_id, job_id)`
 - **Pipeline:** applied → screened → interviewed → rejected / hired
-- **AI:** LiteLLM abstraction; default `claude-sonnet-4-6`; **multimodal** — PDF bytes sent as base64 `document` content block (no pdfplumber for Claude); pdfplumber fallback for non-Claude providers; two separate calls: parse → score; score 0–100 + explanation + strengths/gaps
-- **Upload:** PDF only, 5 MB, server-side python-magic MIME validation; boto3/S3 throughout; `S3_ENDPOINT_URL` redirects to local MinIO container when set, omitted for real AWS S3
-- **Pagination:** Cursor-based, 20/fetch; cursor = `base64(created_at|id)`; candidates-per-job cursor = `base64(fit_score|applied_at|id)`
-- **Serving:** Nginx reverse proxy — `/api/*` → FastAPI (8000), `/*` → React (3000); used in Docker Compose. Local dev runs services separately with Vite proxy for `/api`. Render: backend Web Service + frontend Static Site (separate URLs); `VITE_API_URL` baked in at build time; CORS needed (`CORS_ORIGINS` env var).
-- **Deployment:** Render (app hosting) + Cloudflare R2 (file storage); R2 is S3-compatible — set `S3_ENDPOINT_URL` + R2 credentials in env vars, no code changes needed; Render managed Postgres as add-on; MinIO used locally only
+- **AI:** LiteLLM, default `claude-sonnet-4-6`; multimodal PDF via base64 `document` block (Claude); pdfplumber fallback (non-Claude); parse + score are separate calls; score 0–100 stored per application
+- **Upload:** PDF only, 5 MB, python-magic MIME validation; boto3/S3 throughout; presigned URLs use `MINIO_PUBLIC_URL` client for browser-resolvable links
+- **Pagination:** Cursor-based, 20/fetch; `base64(created_at|id)` for jobs/candidates; `base64(fit_score|applied_at|id)` for job candidates
+- **Serving:** Nginx (`/api/*` → backend:8000, `/*` → frontend:3000) in Docker Compose; Vite proxy for local dev; CORS for Render
+- **Deployment:** Render + Cloudflare R2; MinIO locally only
 
 ## Next Action
 
-Begin backend scaffold: create FastAPI project structure, SQLAlchemy models, and run the 4 Alembic migration files from the enrichment report (Section 01 DDL + Section 04 migration strategy).
+Scaffold React/TypeScript frontend:
+1. `npm create vite@latest frontend -- --template react-ts`
+2. Install: `react-router-dom @tanstack/react-query axios react-hook-form zod`
+3. Wire `api/client.ts` with refresh interceptor
+4. Implement pages: Login → Jobs → Job Detail → Candidates → Candidate Detail
+5. Add `frontend/Dockerfile` for Docker Compose

@@ -1,17 +1,20 @@
 {
-  "sessionId": "2026-06-23-feature",
-  "startedAt": "2026-06-23T00:00:00Z",
-  "status": "active",
+  "sessionId": "2026-06-24-feature",
+  "startedAt": "2026-06-24T00:00:00Z",
+  "endedAt": "2026-06-24T00:00:00Z",
+  "status": "ended",
   "focus": "feature",
-  "completedTasks": [],
-  "pendingTasks": [
+  "completedTasks": [
     "Backend scaffold: FastAPI + SQLAlchemy + Alembic + project structure",
-    "Module 1 - Auth: register/login, JWT 15min + refresh token, bcrypt, server-side revocation",
-    "Module 2 - Jobs: CRUD + filter (status, title, department, location, employment_type, experience_level, remote_type)",
-    "Module 3 - Candidates: CRUD + PDF upload + AI parsing/scoring + pipeline status",
-    "Module 4 - Frontend: React/TypeScript UI",
-    "Module 5 - Docker: docker-compose + Dockerfiles + Nginx",
-    ".env.example + README"
+    "Module 1 - Auth: register/login, JWT 15min + refresh token (JWT-wrapped UUID), bcrypt rounds=12, server-side revocation",
+    "Module 2 - Jobs: CRUD + cursor pagination + filter (status, title, dept, location, emp_type, exp_level, remote_type)",
+    "Module 3 - Candidates: CRUD + PDF upload + AI parsing/scoring + pipeline status + application management",
+    "Alembic migrations: 4 migration files (enum types, trigger function, all tables with indexes, updated_at triggers)",
+    "Infrastructure: docker-compose (postgres + minio + backend + nginx), nginx.conf, Dockerfile, .env.example"
+  ],
+  "pendingTasks": [
+    "Module 4 - Frontend: React/TypeScript UI (login, register, jobs list+filters, job detail, candidate list, candidate detail with AI panel, resume upload)",
+    "README.md"
   ],
   "backlogTasks": [
     "Bulk resume upload with ranking (bonus)"
@@ -23,7 +26,7 @@
     "score": 81,
     "importedAt": "2026-06-22T00:00:00Z",
     "initiativeId": null,
-    "nextStep": "Backend scaffold"
+    "nextStep": "Frontend scaffold"
   },
   "integrations": {},
   "project": {
