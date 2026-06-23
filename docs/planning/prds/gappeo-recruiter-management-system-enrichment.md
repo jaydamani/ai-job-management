@@ -564,7 +564,7 @@ gappeo/
 │   │       ├── 0003_initial_schema.py
 │   │       └── 0004_attach_updated_at_triggers.py
 │   └── app/
-│       ├── main.py                # FastAPI app init, router registration, CORS, lifespan
+│       ├── main.py                # FastAPI app init, router registration, CORS middleware, lifespan
 │       ├── config.py              # pydantic-settings Settings class; reads all env vars
 │       ├── database.py            # SQLAlchemy engine + AsyncSession factory
 │       ├── deps.py                # FastAPI Depends: get_db, get_current_recruiter
@@ -606,14 +606,14 @@ gappeo/
     ├── Dockerfile
     ├── package.json               # react react-dom typescript @tanstack/react-query axios
     │                               # react-router-dom react-hook-form zod
-    ├── vite.config.ts
+    ├── vite.config.ts             # dev server proxy: /api → http://localhost:8000 (local dev only)
     ├── tsconfig.json
     └── src/
         ├── main.tsx               # ReactDOM.createRoot, QueryClientProvider, RouterProvider
         ├── router.tsx             # createBrowserRouter, protected route wrapper
         │
         ├── api/
-        │   ├── client.ts          # axios instance with baseURL + request/response interceptors
+        │   ├── client.ts          # axios instance with baseURL=import.meta.env.VITE_API_URL||'' + interceptors
         │   ├── auth.ts            # register, login, refresh, logout API calls
         │   ├── jobs.ts            # getJobs, createJob, updateJob, closeJob, getJobCandidates
         │   └── candidates.ts      # getCandidates, createCandidate, uploadResume, updateStatus
@@ -677,9 +677,17 @@ Never trust the `Content-Type` header from the multipart upload — it is client
 
 Use a cost factor (rounds) of **12** for password hashing. At rounds=12 on a modern server, bcrypt takes ~250–400 ms — slow enough to resist offline brute force, fast enough that login latency is acceptable. Rounds=10 (passlib default) is insufficiently expensive by 2026 standards. Rounds=14+ introduces perceptible login delays. Set this explicitly: `CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)`.
 
-**07 — CORS Configuration — Nginx-Proxied Single Origin**
+**07 — CORS Configuration — Environment-Specific**
 
-Because Nginx proxies both `/api/*` and `/*` from the same origin, the browser sees a single origin. In local development without Nginx (backend on `:8000`, frontend on `:5173`), CORS is needed. Configure FastAPI's `CORSMiddleware` with `allow_origins=settings.CORS_ORIGINS` where `CORS_ORIGINS` is an env var (comma-separated list, default `http://localhost:5173`). In production behind Nginx, set `CORS_ORIGINS=""` (empty) so the middleware is effectively disabled. Do not use `allow_origins=["*"]` in production.
+CORS behaviour differs across the three environments:
+
+- **Docker Compose:** Nginx proxies both `/api/*` and `/*` from the same origin (port 80). The browser sees a single origin — FastAPI never receives a cross-origin request. Set `CORS_ORIGINS=""` (empty) to effectively disable the middleware.
+- **Local dev:** Backend on `:8000`, frontend Vite dev server on `:5173`. Configure `vite.config.ts` with `server.proxy: { '/api': 'http://localhost:8000' }` so the browser only ever talks to `:5173` — again no cross-origin request reaches FastAPI. `CORS_ORIGINS` default of `http://localhost:5173` is harmless but not triggered.
+- **Render:** Frontend is a Static Site (no proxy). Built JS calls the backend Render URL directly — this IS cross-origin. Set `CORS_ORIGINS` to the Render frontend URL (e.g. `https://gappeo.onrender.com`).
+
+Configure FastAPI's `CORSMiddleware` with `allow_origins=settings.CORS_ORIGINS` where `CORS_ORIGINS` is a comma-separated env var (default `http://localhost:5173`). Do not use `allow_origins=["*"]` in production.
+
+`api/client.ts` base URL: `baseURL: import.meta.env.VITE_API_URL || ''` — empty string uses relative URLs (works behind Nginx or Vite proxy); set to the backend Render URL for the Render static site build.
 
 **08 — React Query Infinite Scroll — useInfiniteQuery + IntersectionObserver**
 
@@ -765,7 +773,7 @@ Estimates assume a single mid-level full-stack engineer comfortable with FastAPI
 | Frontend — Auth + Jobs | **M** | Login/register forms, token interceptor, job list with filters, infinite scroll, create/edit form. React Hook Form + Zod validation adds time. ~3 days. |
 | Frontend — Candidates + AI UI | **M** | Candidate detail with AI data panel, fit score, pipeline selector, resume upload with loading state. More UI states to handle (pending/complete/failed AI). ~3–4 days. |
 | Alembic + DB Setup | **S** | Four migration files, manual enum and trigger DDL, autogenerate for tables. Straightforward if the enum caveats are understood upfront. ~1–2 days. |
-| Docker / Infra | **S** | Five containers (backend, frontend, nginx, postgres, minio), named volumes, env var wiring, MinIO bucket init script. ~1–2 days, mostly config. |
+| Docker / Infra | **S** | Five containers (backend, frontend, nginx, postgres, minio), named volumes, env var wiring, MinIO bucket init script, nginx.conf. ~1–2 days, mostly config. |
 
 ### Calendar Estimate — Single Mid-Level Engineer
 

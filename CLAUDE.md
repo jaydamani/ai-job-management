@@ -62,7 +62,7 @@ gappeo/
 - **AI Layer:** LiteLLM for provider-agnostic completions — swap models via `AI_MODEL` env var (e.g. `claude-sonnet-4-6`, `gpt-4o`); default `claude-sonnet-4-6`; **multimodal** — PDF bytes sent directly as a base64 `document` content block (no text extraction step); eliminates image-only PDF failures; Claude-native feature, falls back to text extraction for non-Claude providers
 - **File uploads:** PDF resumes stored in MinIO (S3-compatible); local MinIO container in docker-compose, production points to managed S3 via env vars
 - **Database:** PostgreSQL via SQLAlchemy ORM + Alembic migrations; local Postgres in docker-compose, production points to managed DB via env vars
-- **Serving:** Nginx reverse proxy — `/api/*` → FastAPI (8000), `/*` → React (3000); single origin for both services
+- **Serving:** Nginx reverse proxy — `/api/*` → FastAPI (8000), `/*` → React (3000); single origin for both services in Docker Compose. Local dev runs backend and frontend separately (Vite proxy handles `/api`). Render deploys backend (Web Service) and frontend (Static Site) as separate services; `VITE_API_URL` set at build time.
 - **Frontend state:** React Query for server state; minimal local state
 
 ## Environment Variables
@@ -76,3 +76,5 @@ See `.env.example` for required keys:
 - `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` — S3 credentials (use MinIO values locally)
 - `S3_BUCKET` — Bucket name for resume uploads
 - `S3_ENDPOINT_URL` — Override S3 endpoint (set to `http://minio:9000` locally; omit in production to hit real AWS)
+- `CORS_ORIGINS` — Comma-separated allowed origins for FastAPI CORS middleware (default `http://localhost:5173` for local dev; set to Render frontend URL on Render)
+- `VITE_API_URL` — Frontend env var baked in at build time; empty string for local dev and Docker Compose (relative URLs), set to backend Render URL for Render static site deploy
