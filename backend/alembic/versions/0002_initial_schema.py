@@ -1,7 +1,7 @@
 """initial schema
 
-Revision ID: 0003
-Revises: 0002
+Revision ID: 0002
+Revises: 0001
 Create Date: 2026-06-24
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 from alembic import op
 
-revision: str = "0003"
-down_revision: Union[str, None] = "0002"
+revision: str = "0002"
+down_revision: Union[str, None] = "0001"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -52,10 +52,10 @@ def upgrade() -> None:
         sa.Column("salary_min", sa.Integer),
         sa.Column("salary_max", sa.Integer),
         sa.Column("required_skills", postgresql.ARRAY(sa.String), nullable=False, server_default=sa.text("'{}'")),
-        sa.Column("employment_type", sa.Enum("full_time", "part_time", "contract", "internship", name="employment_type_enum", create_type=False)),
-        sa.Column("experience_level", sa.Enum("junior", "mid", "senior", "lead", name="experience_level_enum", create_type=False)),
-        sa.Column("remote_type", sa.Enum("onsite", "hybrid", "remote", name="remote_type_enum", create_type=False)),
-        sa.Column("status", sa.Enum("open", "closed", name="job_status_enum", create_type=False), nullable=False, server_default=sa.text("'open'")),
+        sa.Column("employment_type", sa.Enum("full_time", "part_time", "contract", "internship", name="employment_type_enum")),
+        sa.Column("experience_level", sa.Enum("junior", "mid", "senior", "lead", name="experience_level_enum")),
+        sa.Column("remote_type", sa.Enum("onsite", "hybrid", "remote", name="remote_type_enum")),
+        sa.Column("status", sa.Enum("open", "closed", name="job_status_enum"), nullable=False, server_default=sa.text("'open'")),
         sa.Column("created_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
         sa.Column("updated_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
         sa.CheckConstraint("salary_min IS NULL OR salary_max IS NULL OR salary_min <= salary_max", name="chk_salary_range"),
@@ -99,7 +99,7 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column("candidate_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("candidates.id", ondelete="CASCADE"), nullable=False),
         sa.Column("job_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("status", sa.Enum("applied", "screened", "interviewed", "rejected", "hired", name="application_status_enum", create_type=False), nullable=False, server_default=sa.text("'applied'")),
+        sa.Column("status", sa.Enum("applied", "screened", "interviewed", "rejected", "hired", name="application_status_enum"), nullable=False, server_default=sa.text("'applied'")),
         sa.Column("fit_score", sa.Integer, sa.CheckConstraint("fit_score BETWEEN 0 AND 100", name="chk_fit_score_range")),
         sa.Column("fit_explanation", sa.Text),
         sa.Column("ai_parsed_resume", postgresql.JSONB),
@@ -120,3 +120,8 @@ def downgrade() -> None:
     op.drop_table("refresh_tokens")
     op.drop_table("recruiters")
     op.execute("DROP EXTENSION IF EXISTS pg_trgm")
+    op.execute("DROP TYPE IF EXISTS application_status_enum")
+    op.execute("DROP TYPE IF EXISTS job_status_enum")
+    op.execute("DROP TYPE IF EXISTS remote_type_enum")
+    op.execute("DROP TYPE IF EXISTS experience_level_enum")
+    op.execute("DROP TYPE IF EXISTS employment_type_enum")
