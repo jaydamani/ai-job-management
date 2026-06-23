@@ -9,9 +9,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
-    AI_MODEL: str = "claude-sonnet-4-6"
-    ANTHROPIC_API_KEY: str = ""
-    OPENAI_API_KEY: str = ""
+    AI_MODEL: str = "openai/qwen/qwen2.5-vl-32b-instruct:free"
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_API_BASE: str = "https://openrouter.ai/api/v1"
 
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
