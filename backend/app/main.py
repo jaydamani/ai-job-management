@@ -11,7 +11,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Gappeo API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Gappeo API", version="1.0.0", lifespan=lifespan, root_path='/api')
 
 app.add_middleware(
     CORSMiddleware,
