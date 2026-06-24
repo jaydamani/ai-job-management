@@ -26,6 +26,7 @@ def upgrade() -> None:
         sa.Column("password_hash", sa.Text, nullable=False),
         sa.Column("name", sa.Text, nullable=False),
         sa.Column("created_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
+        sa.Column("updated_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
     )
     op.create_index("idx_recruiters_email", "recruiters", ["email"])
 
@@ -37,6 +38,7 @@ def upgrade() -> None:
         sa.Column("expires_at", postgresql.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("revoked", sa.Boolean, nullable=False, server_default=sa.text("FALSE")),
         sa.Column("created_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
+        sa.Column("updated_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
     )
     op.create_index("idx_refresh_tokens_recruiter", "refresh_tokens", ["recruiter_id"])
     op.create_index("idx_refresh_tokens_lookup", "refresh_tokens", ["recruiter_id", "revoked", "expires_at"])
@@ -105,6 +107,7 @@ def upgrade() -> None:
         sa.Column("ai_parsed_resume", postgresql.JSONB),
         sa.Column("interview_notes", sa.Text),
         sa.Column("applied_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
+        sa.Column("created_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
         sa.Column("updated_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
         sa.UniqueConstraint("candidate_id", "job_id", name="uq_candidate_job"),
     )
