@@ -50,11 +50,24 @@ async def get_candidate_with_applications(
 ) -> tuple:
     candidate = await get_candidate(db, candidate_id, recruiter_id)
     result = await db.execute(
-        select(CandidateJobApplication)
+        select(CandidateJobApplication, Job.title.label("job_title"))
+        .join(Job, CandidateJobApplication.job_id == Job.id)
         .where(CandidateJobApplication.candidate_id == candidate_id)
         .order_by(CandidateJobApplication.applied_at.desc())
     )
-    applications = list(result.scalars().all())
+    applications = [
+        {
+            "id": app.id,
+            "job_id": app.job_id,
+            "job_title": job_title,
+            "status": app.status,
+            "fit_score": app.fit_score,
+            "fit_explanation": app.fit_explanation,
+            "applied_at": app.applied_at,
+            "updated_at": app.updated_at,
+        }
+        for app, job_title in result.all()
+    ]
     return candidate, applications
 
 

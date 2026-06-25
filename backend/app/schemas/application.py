@@ -32,6 +32,7 @@ class ApplicationSummaryResponse(BaseModel):
 
     id: UUID
     job_id: UUID
+    job_title: Optional[str] = None
     status: str
     fit_score: Optional[int] = None
     fit_explanation: Optional[str] = None
@@ -40,7 +41,7 @@ class ApplicationSummaryResponse(BaseModel):
 
 
 class ResumeUploadResponse(BaseModel):
-    resume_s3_key: str
+    resume_url: str
     ai_status: str
     parsed_resume: Optional[Dict[str, Any]] = None
     fit_score: Optional[int] = None

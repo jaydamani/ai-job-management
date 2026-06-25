@@ -30,6 +30,7 @@ async def upload_and_analyze(
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
 
     s3_key = storage_service.upload_resume(file_bytes, str(candidate.id))
+    resume_url = storage_service.get_presigned_url(s3_key)
     candidate.resume_s3_key = s3_key
     await db.commit()
 
@@ -75,7 +76,7 @@ async def upload_and_analyze(
         await db.commit()
 
     return {
-        "resume_s3_key": s3_key,
+        "resume_url": resume_url,
         "ai_status": ai_status,
         "parsed_resume": parsed_resume,
         "fit_score": last_fit_score,

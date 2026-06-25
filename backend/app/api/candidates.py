@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_current_recruiter
 from app.models.recruiter import Recruiter
-from app.schemas.application import ApplicationCreate, ApplicationResponse, ResumeUploadResponse
+from app.schemas.application import ApplicationCreate, ApplicationResponse, ApplicationSummaryResponse, ResumeUploadResponse
 from app.schemas.candidate import (
     CandidateCreate,
     CandidateDetailResponse,
@@ -48,11 +48,11 @@ async def get_candidate(
     db: AsyncSession = Depends(get_db),
     current_user: Recruiter = Depends(get_current_recruiter),
 ):
-    candidate, applications = await candidate_service.get_candidate_with_applications(
+    candidate, app_dicts = await candidate_service.get_candidate_with_applications(
         db, candidate_id, current_user.id
     )
     data = CandidateDetailResponse.model_validate(candidate)
-    data.applications = applications
+    data.applications = [ApplicationSummaryResponse.model_validate(d) for d in app_dicts]
     return data
 
 

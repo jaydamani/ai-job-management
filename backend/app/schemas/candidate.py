@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import List, Optional
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.application import ApplicationSummaryResponse
 
@@ -59,9 +59,17 @@ class CandidateResponse(BaseModel):
     source: Optional[str] = None
     referred_by: Optional[str] = None
     notes: Optional[str] = None
-    resume_s3_key: Optional[str] = None
+    resume_s3_key: Optional[str] = Field(default=None, exclude=True)
+    resume_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+
+    @model_validator(mode='after')
+    def set_resume_url(self) -> 'CandidateResponse':
+        if self.resume_s3_key and self.resume_url is None:
+            from app.services.storage_service import get_presigned_url
+            self.resume_url = get_presigned_url(self.resume_s3_key)
+        return self
 
 
 class CandidateDetailResponse(CandidateResponse):
@@ -75,9 +83,17 @@ class CandidateWithApplicationResponse(BaseModel):
     name: str
     email: str
     phone: Optional[str] = None
-    resume_s3_key: Optional[str] = None
+    resume_s3_key: Optional[str] = Field(default=None, exclude=True)
+    resume_url: Optional[str] = None
     application_id: UUID
     application_status: str
     fit_score: Optional[int] = None
     fit_explanation: Optional[str] = None
     applied_at: datetime
+
+    @model_validator(mode='after')
+    def set_resume_url(self) -> 'CandidateWithApplicationResponse':
+        if self.resume_s3_key and self.resume_url is None:
+            from app.services.storage_service import get_presigned_url
+            self.resume_url = get_presigned_url(self.resume_s3_key)
+        return self
