@@ -12,7 +12,8 @@ import type { PaginatedResponse, JobResponse } from '../types'
 
 // IntersectionObserver is not available in jsdom — provide a no-op stub
 beforeAll(() => {
-  global.IntersectionObserver = class IntersectionObserver {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(globalThis as any).IntersectionObserver = class IntersectionObserver {
     observe() {}
     unobserve() {}
     disconnect() {}

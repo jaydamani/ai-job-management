@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -18,18 +18,14 @@ const schema = z
     description: z.string().min(1, 'Description is required'),
     department: z.string().max(100, 'Department must be 100 characters or less').optional().or(z.literal('')),
     location: z.string().max(100, 'Location must be 100 characters or less').optional().or(z.literal('')),
-    salary_min: z.coerce
-      .number({ invalid_type_error: 'Must be a number' })
-      .positive('Must be a positive number')
-      .int('Must be a whole number')
-      .optional()
-      .or(z.literal('' as unknown as number)),
-    salary_max: z.coerce
-      .number({ invalid_type_error: 'Must be a number' })
-      .positive('Must be a positive number')
-      .int('Must be a whole number')
-      .optional()
-      .or(z.literal('' as unknown as number)),
+    salary_min: z.preprocess(
+      (v) => (v === '' || v === null || v === undefined) ? undefined : Number(v),
+      z.number({ message: 'Must be a number' }).positive('Must be a positive number').int('Must be a whole number').optional()
+    ),
+    salary_max: z.preprocess(
+      (v) => (v === '' || v === null || v === undefined) ? undefined : Number(v),
+      z.number({ message: 'Must be a number' }).positive('Must be a positive number').int('Must be a whole number').optional()
+    ),
     required_skills: z.array(z.string()),
     employment_type: z
       .enum(['full_time', 'part_time', 'contract', 'internship', ''] as const)
@@ -172,7 +168,7 @@ export default function JobFormPage() {
     control,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as Resolver<FormData>,
     defaultValues: { required_skills: [] },
   })
 
@@ -184,8 +180,8 @@ export default function JobFormPage() {
         description: job.description,
         department: job.department ?? '',
         location: job.location ?? '',
-        salary_min: job.salary_min ?? ('' as unknown as number),
-        salary_max: job.salary_max ?? ('' as unknown as number),
+        salary_min: job.salary_min ?? undefined,
+        salary_max: job.salary_max ?? undefined,
         required_skills: job.required_skills ?? [],
         employment_type: (job.employment_type ?? '') as EmploymentType | '',
         experience_level: (job.experience_level ?? '') as ExperienceLevel | '',

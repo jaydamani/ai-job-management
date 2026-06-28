@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -33,24 +33,18 @@ const schema = z
       .url('Enter a valid URL (e.g. https://github.com/…)')
       .optional()
       .or(z.literal('')),
-    expected_salary_min: z.coerce
-      .number({ invalid_type_error: 'Must be a number' })
-      .positive('Must be a positive number')
-      .int('Must be a whole number')
-      .optional()
-      .or(z.literal('' as unknown as number)),
-    expected_salary_max: z.coerce
-      .number({ invalid_type_error: 'Must be a number' })
-      .positive('Must be a positive number')
-      .int('Must be a whole number')
-      .optional()
-      .or(z.literal('' as unknown as number)),
-    notice_period_days: z.coerce
-      .number({ invalid_type_error: 'Must be a number' })
-      .nonnegative('Must be 0 or more')
-      .int('Must be a whole number')
-      .optional()
-      .or(z.literal('' as unknown as number)),
+    expected_salary_min: z.preprocess(
+      (v) => (v === '' || v === null || v === undefined) ? undefined : Number(v),
+      z.number({ message: 'Must be a number' }).positive('Must be a positive number').int('Must be a whole number').optional()
+    ),
+    expected_salary_max: z.preprocess(
+      (v) => (v === '' || v === null || v === undefined) ? undefined : Number(v),
+      z.number({ message: 'Must be a number' }).positive('Must be a positive number').int('Must be a whole number').optional()
+    ),
+    notice_period_days: z.preprocess(
+      (v) => (v === '' || v === null || v === undefined) ? undefined : Number(v),
+      z.number({ message: 'Must be a number' }).nonnegative('Must be 0 or more').int('Must be a whole number').optional()
+    ),
     source: z.string().optional().or(z.literal('')),
     notes: z.string().optional().or(z.literal('')),
   })
@@ -292,7 +286,7 @@ function Step2({ jobId, file, onBack }: Step2Props) {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormData>({ resolver: zodResolver(schema) })
+  } = useForm<FormData>({ resolver: zodResolver(schema) as Resolver<FormData> })
 
   const onSubmit = async (data: FormData) => {
     setSubmitting(true)
