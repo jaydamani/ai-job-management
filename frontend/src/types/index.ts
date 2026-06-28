@@ -189,3 +189,23 @@ export interface PaginatedResponse<T> {
   next_cursor: string | null
   has_more: boolean
 }
+
+export interface BulkUploadItemResult {
+  candidate_id?: string
+  name: string
+  email?: string
+  fit_score?: number
+  fit_explanation?: string
+  strengths?: string[]
+  gaps?: string[]
+  resume_url?: string
+  status: 'success' | 'failed'
+  error?: string
+}
+
+export interface BulkUploadResponse {
+  results: BulkUploadItemResult[]
+  total: number
+  succeeded: number
+  failed: number
+}

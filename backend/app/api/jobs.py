@@ -1,13 +1,13 @@
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.deps import get_current_recruiter
 from app.models.recruiter import Recruiter
-from app.schemas.candidate import CandidateWithApplicationResponse
+from app.schemas.candidate import BulkUploadItemResult, BulkUploadResponse, CandidateWithApplicationResponse
 from app.schemas.job import JobCloseResponse, JobCreate, JobResponse, JobUpdate
 from app.schemas.pagination import PaginatedResponse
 from app.services import candidate_service, job_service
@@ -80,6 +80,30 @@ async def close_job(
     current_user: Recruiter = Depends(get_current_recruiter),
 ):
     return await job_service.close_job(db, job_id, current_user.id)
+
+
+@router.post("/{job_id}/candidates/bulk-upload", response_model=BulkUploadResponse)
+async def bulk_upload_resumes(
+    job_id: UUID,
+    files: List[UploadFile] = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: Recruiter = Depends(get_current_recruiter),
+):
+    if len(files) > 20:
+        raise HTTPException(status_code=400, detail="Maximum 20 files per upload")
+
+    file_data = [(await f.read(), f.filename or "resume.pdf") for f in files]
+    raw_results = await candidate_service.bulk_upload_resumes(
+        db, job_id, current_user.id, file_data
+    )
+    results = [BulkUploadItemResult(**r) for r in raw_results]
+    succeeded = sum(1 for r in results if r.status == "success")
+    return BulkUploadResponse(
+        results=results,
+        total=len(results),
+        succeeded=succeeded,
+        failed=len(results) - succeeded,
+    )
 
 
 @router.get("/{job_id}/candidates", response_model=PaginatedResponse[CandidateWithApplicationResponse])

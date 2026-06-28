@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -12,6 +13,10 @@ from app.models.job import Job
 from app.schemas.candidate import CandidateCreate, CandidateUpdate
 from app.schemas.pagination import decode_cursor, encode_cursor
 from app.services.skill_taxonomy import normalize_skill_query
+
+logger = logging.getLogger(__name__)
+
+_MAX_BULK_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 
 
 async def create_candidate(
@@ -349,3 +354,107 @@ async def list_job_candidates(
         del item["_cursor_parts"]
 
     return items, next_cursor, has_more
+
+
+async def bulk_upload_resumes(
+    db: AsyncSession,
+    job_id: uuid.UUID,
+    recruiter_id: uuid.UUID,
+    files: list,
+) -> list:
+    from app.services import ai_service, storage_service
+    import magic
+
+    job_result = await db.execute(
+        select(Job).where(Job.id == job_id, Job.recruiter_id == recruiter_id)
+    )
+    job = job_result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    results = []
+    for file_bytes, filename in files:
+        base = {"name": filename, "email": None, "candidate_id": None,
+                "fit_score": None, "fit_explanation": None,
+                "strengths": None, "gaps": None, "resume_url": None}
+        try:
+            if len(file_bytes) > _MAX_BULK_FILE_SIZE:
+                results.append({**base, "status": "failed", "error": "File too large (max 5 MB)"})
+                continue
+
+            mime = magic.from_buffer(file_bytes, mime=True)
+            if mime != "application/pdf":
+                results.append({**base, "status": "failed", "error": "Only PDF files are accepted"})
+                continue
+
+            parsed_resume = await ai_service.parse_resume(file_bytes)
+            name = (parsed_resume.get("name") or "").strip() or filename
+            email = parsed_resume.get("email") or None
+            base = {**base, "name": name, "email": email}
+
+            # find or create candidate by email
+            candidate = None
+            if email:
+                existing = await db.execute(
+                    select(Candidate).where(
+                        Candidate.recruiter_id == recruiter_id,
+                        Candidate.email == email,
+                    )
+                )
+                candidate = existing.scalar_one_or_none()
+
+            if not candidate:
+                fallback_email = email or f"bulk-{uuid.uuid4().hex[:8]}@noemail.local"
+                candidate = Candidate(recruiter_id=recruiter_id, name=name, email=fallback_email)
+                db.add(candidate)
+                await db.flush()
+
+            # find or create application
+            existing_app = await db.execute(
+                select(CandidateJobApplication).where(
+                    CandidateJobApplication.candidate_id == candidate.id,
+                    CandidateJobApplication.job_id == job_id,
+                )
+            )
+            application = existing_app.scalar_one_or_none()
+            if not application:
+                application = CandidateJobApplication(candidate_id=candidate.id, job_id=job_id)
+                db.add(application)
+                await db.flush()
+
+            s3_key = storage_service.upload_resume(file_bytes, str(candidate.id))
+            resume_url = storage_service.get_presigned_url(s3_key)
+            application.resume_s3_key = s3_key
+
+            fit_result = await ai_service.score_fit(job, parsed_resume)
+            application.ai_parsed_resume = parsed_resume
+            application.fit_score = fit_result.get("score")
+            application.fit_explanation = fit_result.get("explanation")
+            application.strengths = fit_result.get("strengths")
+            application.gaps = fit_result.get("gaps")
+            application.ai_status = "complete"
+
+            await db.commit()
+
+            results.append({
+                "candidate_id": candidate.id,
+                "name": candidate.name,
+                "email": candidate.email,
+                "fit_score": application.fit_score,
+                "fit_explanation": application.fit_explanation,
+                "strengths": application.strengths,
+                "gaps": application.gaps,
+                "resume_url": resume_url,
+                "status": "success",
+                "error": None,
+            })
+        except Exception as e:
+            await db.rollback()
+            error_msg = str(e)
+            if "UNSCANNABLE_PDF" in error_msg:
+                error_msg = "Cannot extract text from this PDF"
+            logger.warning("Bulk upload failed for %s: %s", filename, e)
+            results.append({**base, "status": "failed", "error": error_msg})
+
+    results.sort(key=lambda r: (r["status"] == "failed", -(r.get("fit_score") or 0)))
+    return results

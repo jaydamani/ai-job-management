@@ -1,5 +1,6 @@
 import api from './client'
 import type {
+  BulkUploadResponse,
   CandidateCreate,
   CandidateDetailResponse,
   ApplicationResponse,
@@ -93,4 +94,14 @@ export const applicationsApi = {
     api
       .patch<ApplicationResponse>(`/applications/${appId}/status`, { status })
       .then((r) => r.data),
+}
+
+export function bulkUploadResumes(jobId: string, files: File[]): Promise<BulkUploadResponse> {
+  const form = new FormData()
+  files.forEach((f) => form.append('files', f))
+  return api
+    .post<BulkUploadResponse>(`/jobs/${jobId}/candidates/bulk-upload`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    .then((r) => r.data)
 }

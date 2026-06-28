@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
 import { getJob, listJobCandidates } from '../api/jobs'
 import type { CandidateWithApplicationResponse, PipelineStatus } from '../types'
+import BulkUploadModal from '../components/BulkUploadModal'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -373,6 +374,7 @@ export default function CandidatesPage() {
   const [minExp, setMinExp] = useState('')
   const [skill, setSkill] = useState('')
   const [debouncedSkill, setDebouncedSkill] = useState('')
+  const [showBulkUpload, setShowBulkUpload] = useState(false)
 
   // Debounce text inputs by 300 ms
   useEffect(() => {
@@ -559,15 +561,27 @@ export default function CandidatesPage() {
             </span>
           )}
         </h2>
-        <Link
-          to={`/jobs/${jobId}/candidates/new`}
-          className="inline-flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
-          Add Candidate
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowBulkUpload(true)}
+            className="inline-flex items-center gap-1.5 border border-gray-200 text-gray-600 px-4 py-2 rounded-md text-sm font-medium hover:border-blue-300 hover:text-blue-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Bulk Upload
+          </button>
+          <Link
+            to={`/jobs/${jobId}/candidates/new`}
+            className="inline-flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Candidate
+          </Link>
+        </div>
       </div>
 
       <FilterBar
@@ -667,6 +681,11 @@ export default function CandidatesPage() {
 
       {/* Infinite scroll sentinel */}
       <div ref={sentinelRef} className="h-1" aria-hidden="true" />
+
+      {/* Bulk upload modal */}
+      {showBulkUpload && jobId && (
+        <BulkUploadModal jobId={jobId} onClose={() => setShowBulkUpload(false)} />
+      )}
     </div>
   )
 }

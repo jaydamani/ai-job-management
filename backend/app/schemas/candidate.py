@@ -106,3 +106,23 @@ class CandidateWithApplicationResponse(BaseModel):
     github_url: Optional[str] = None
     created_at: datetime
     application: ApplicationInCandidateList
+
+
+class BulkUploadItemResult(BaseModel):
+    candidate_id: Optional[UUID] = None
+    name: str
+    email: Optional[str] = None
+    fit_score: Optional[int] = None
+    fit_explanation: Optional[str] = None
+    strengths: Optional[List[str]] = None
+    gaps: Optional[List[str]] = None
+    resume_url: Optional[str] = None
+    status: str
+    error: Optional[str] = None
+
+
+class BulkUploadResponse(BaseModel):
+    results: List[BulkUploadItemResult]
+    total: int
+    succeeded: int
+    failed: int
