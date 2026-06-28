@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, Integer, Text, CheckConstraint, UniqueConstraint, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, CheckConstraint, UniqueConstraint, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, TIMESTAMP, JSONB
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.sql import func
@@ -23,6 +23,9 @@ class CandidateJobApplication(Base):
     fit_explanation = Column(Text)
     ai_parsed_resume = Column(JSONB)
     interview_notes = Column(Text)
+    strengths = Column(JSONB, nullable=True)
+    gaps = Column(JSONB, nullable=True)
+    ai_status = Column(String(20), nullable=True)
     applied_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
 
     __table_args__ = (
