@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
@@ -23,6 +23,9 @@ class ApplicationResponse(BaseModel):
     fit_explanation: Optional[str] = None
     ai_parsed_resume: Optional[Dict[str, Any]] = None
     interview_notes: Optional[str] = None
+    strengths: Optional[List[str]] = None
+    gaps: Optional[List[str]] = None
+    ai_status: Optional[str] = None
     applied_at: datetime
     updated_at: datetime
 
@@ -43,6 +46,8 @@ class ApplicationSummaryResponse(BaseModel):
 class ResumeUploadResponse(BaseModel):
     resume_url: str
     ai_status: str
-    parsed_resume: Optional[Dict[str, Any]] = None
+    ai_parsed_resume: Optional[Dict[str, Any]] = None
     fit_score: Optional[int] = None
     fit_explanation: Optional[str] = None
+    strengths: Optional[List[str]] = None
+    gaps: Optional[List[str]] = None

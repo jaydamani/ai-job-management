@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import magic
 from fastapi import HTTPException
@@ -38,6 +38,8 @@ async def upload_and_analyze(
     ai_status = "failed"
     last_fit_score = None
     last_fit_explanation = None
+    last_strengths: Optional[List[str]] = None
+    last_gaps: Optional[List[str]] = None
 
     try:
         parsed_resume = await ai_service.parse_resume(file_bytes)
@@ -67,18 +69,26 @@ async def upload_and_analyze(
                 app.ai_parsed_resume = parsed_resume
                 app.fit_score = fit_result.get("score")
                 app.fit_explanation = fit_result.get("explanation")
+                app.strengths = fit_result.get("strengths")
+                app.gaps = fit_result.get("gaps")
+                app.ai_status = "complete"
                 last_fit_score = app.fit_score
                 last_fit_explanation = app.fit_explanation
+                last_strengths = app.strengths
+                last_gaps = app.gaps
             except Exception as e:
                 logger.warning("Fit scoring failed for application %s: %s", app.id, e)
                 app.ai_parsed_resume = parsed_resume
+                app.ai_status = "failed"
 
         await db.commit()
 
     return {
         "resume_url": resume_url,
         "ai_status": ai_status,
-        "parsed_resume": parsed_resume,
+        "ai_parsed_resume": parsed_resume,
         "fit_score": last_fit_score,
         "fit_explanation": last_fit_explanation,
+        "strengths": last_strengths,
+        "gaps": last_gaps,
     }
