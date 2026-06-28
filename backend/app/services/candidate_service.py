@@ -241,7 +241,9 @@ async def list_job_candidates(
 
     if skill:
         from sqlalchemy import func, text
-        skill_pattern = f"%{skill}%"
+        from app.services.skill_taxonomy import normalize_skill_query
+        normalized_skill = normalize_skill_query(skill) or skill
+        skill_pattern = f"%{normalized_skill}%"
         query = query.where(
             func.exists(
                 text(

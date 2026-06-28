@@ -132,6 +132,8 @@ def _completion_kwargs(schema_name: str, schema: dict) -> dict:
 # ── Public API ─────────────────────────────────────────────────────────────────
 
 async def parse_resume(pdf_bytes: bytes) -> Dict[str, Any]:
+    from app.services.skill_taxonomy import normalize_skills
+
     image_blocks = _pdf_to_image_blocks(pdf_bytes)
     user_content = [
         {"type": "text", "text": "Extract structured data from this resume."},
@@ -145,7 +147,9 @@ async def parse_resume(pdf_bytes: bytes) -> Dict[str, Any]:
         ],
         max_tokens=2048,
     )
-    return json.loads(response.choices[0].message.content)
+    data = json.loads(response.choices[0].message.content)
+    data["skills"] = normalize_skills(data.get("skills") or [])
+    return data
 
 
 async def score_fit(job, parsed_resume: Dict[str, Any]) -> Dict[str, Any]:
