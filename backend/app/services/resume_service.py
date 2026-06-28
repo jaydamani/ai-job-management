@@ -33,7 +33,17 @@ async def upload_and_analyze(
 
     s3_key = storage_service.upload_resume(file_bytes, str(candidate.id))
     resume_url = storage_service.get_presigned_url(s3_key)
-    candidate.resume_s3_key = s3_key
+
+    if application_id:
+        app_res = await db.execute(
+            select(CandidateJobApplication).where(
+                CandidateJobApplication.id == application_id,
+                CandidateJobApplication.candidate_id == candidate.id,
+            )
+        )
+        upload_app = app_res.scalar_one_or_none()
+        if upload_app:
+            upload_app.resume_s3_key = s3_key
     await db.commit()
 
     parsed_resume: Optional[Dict[str, Any]] = None

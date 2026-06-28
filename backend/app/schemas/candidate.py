@@ -59,17 +59,8 @@ class CandidateResponse(BaseModel):
     source: Optional[str] = None
     referred_by: Optional[str] = None
     notes: Optional[str] = None
-    resume_s3_key: Optional[str] = Field(default=None, exclude=True)
-    resume_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-
-    @model_validator(mode='after')
-    def set_resume_url(self) -> 'CandidateResponse':
-        if self.resume_s3_key and self.resume_url is None:
-            from app.services.storage_service import get_presigned_url
-            self.resume_url = get_presigned_url(self.resume_s3_key)
-        return self
 
 
 class CandidateDetailResponse(CandidateResponse):
@@ -89,7 +80,16 @@ class ApplicationInCandidateList(BaseModel):
     gaps: Optional[List[str]] = None
     ai_parsed_resume: Optional[Dict[str, Any]] = None
     ai_status: Optional[str] = None
+    resume_s3_key: Optional[str] = Field(default=None, exclude=True)
+    resume_url: Optional[str] = None
     applied_at: datetime
+
+    @model_validator(mode='after')
+    def set_resume_url(self) -> 'ApplicationInCandidateList':
+        if self.resume_s3_key and self.resume_url is None:
+            from app.services.storage_service import get_presigned_url
+            self.resume_url = get_presigned_url(self.resume_s3_key)
+        return self
 
 
 class CandidateWithApplicationResponse(BaseModel):
@@ -103,14 +103,5 @@ class CandidateWithApplicationResponse(BaseModel):
     linkedin_url: Optional[str] = None
     portfolio_url: Optional[str] = None
     github_url: Optional[str] = None
-    resume_s3_key: Optional[str] = Field(default=None, exclude=True)
-    resume_url: Optional[str] = None
     created_at: datetime
     application: ApplicationInCandidateList
-
-    @model_validator(mode='after')
-    def set_resume_url(self) -> 'CandidateWithApplicationResponse':
-        if self.resume_s3_key and self.resume_url is None:
-            from app.services.storage_service import get_presigned_url
-            self.resume_url = get_presigned_url(self.resume_s3_key)
-        return self

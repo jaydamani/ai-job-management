@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class ApplicationCreate(BaseModel):
@@ -26,8 +26,17 @@ class ApplicationResponse(BaseModel):
     strengths: Optional[List[str]] = None
     gaps: Optional[List[str]] = None
     ai_status: Optional[str] = None
+    resume_s3_key: Optional[str] = Field(default=None, exclude=True)
+    resume_url: Optional[str] = None
     applied_at: datetime
     updated_at: datetime
+
+    @model_validator(mode='after')
+    def set_resume_url(self) -> 'ApplicationResponse':
+        if self.resume_s3_key and self.resume_url is None:
+            from app.services.storage_service import get_presigned_url
+            self.resume_url = get_presigned_url(self.resume_s3_key)
+        return self
 
 
 class ApplicationSummaryResponse(BaseModel):
@@ -39,8 +48,17 @@ class ApplicationSummaryResponse(BaseModel):
     status: str
     fit_score: Optional[int] = None
     fit_explanation: Optional[str] = None
+    resume_s3_key: Optional[str] = Field(default=None, exclude=True)
+    resume_url: Optional[str] = None
     applied_at: datetime
     updated_at: datetime
+
+    @model_validator(mode='after')
+    def set_resume_url(self) -> 'ApplicationSummaryResponse':
+        if self.resume_s3_key and self.resume_url is None:
+            from app.services.storage_service import get_presigned_url
+            self.resume_url = get_presigned_url(self.resume_s3_key)
+        return self
 
 
 class ResumeUploadResponse(BaseModel):

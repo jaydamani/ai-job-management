@@ -63,6 +63,7 @@ async def get_candidate_with_applications(
             "status": app.status,
             "fit_score": app.fit_score,
             "fit_explanation": app.fit_explanation,
+            "resume_s3_key": app.resume_s3_key,
             "applied_at": app.applied_at,
             "updated_at": app.updated_at,
         }
@@ -242,7 +243,6 @@ async def list_job_candidates(
             "linkedin_url": candidate.linkedin_url,
             "portfolio_url": candidate.portfolio_url,
             "github_url": candidate.github_url,
-            "resume_s3_key": candidate.resume_s3_key,
             "created_at": candidate.created_at,
             "application": {
                 "id": app.id,
@@ -255,6 +255,7 @@ async def list_job_candidates(
                 "gaps": app.gaps,
                 "ai_parsed_resume": app.ai_parsed_resume,
                 "ai_status": app.ai_status,
+                "resume_s3_key": app.resume_s3_key,
                 "applied_at": app.applied_at,
             },
             "_cursor_parts": (score_str, app.applied_at.isoformat(), str(app.id)),

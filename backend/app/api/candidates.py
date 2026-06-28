@@ -107,7 +107,7 @@ async def rescore_application(
 ):
     from app.services import ai_service, storage_service
 
-    candidate = await candidate_service.get_candidate(db, candidate_id, current_user.id)
+    await candidate_service.get_candidate(db, candidate_id, current_user.id)
 
     app_result = await db.execute(
         select(CandidateJobApplication, Job)
@@ -123,10 +123,10 @@ async def rescore_application(
 
     application, job = row
 
-    if not candidate.resume_s3_key:
-        raise HTTPException(status_code=400, detail="No resume uploaded for this candidate")
+    if not application.resume_s3_key:
+        raise HTTPException(status_code=400, detail="No resume uploaded for this application")
 
-    pdf_bytes = storage_service.download_resume(candidate.resume_s3_key)
+    pdf_bytes = storage_service.download_resume(application.resume_s3_key)
 
     ai_status = "failed"
     fit_score = None

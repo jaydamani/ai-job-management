@@ -26,6 +26,7 @@ class CandidateJobApplication(Base):
     strengths = Column(JSONB, nullable=True)
     gaps = Column(JSONB, nullable=True)
     ai_status = Column(String(20), nullable=True)
+    resume_s3_key = Column(Text, nullable=True)
     applied_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
 
     __table_args__ = (

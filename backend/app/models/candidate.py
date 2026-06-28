@@ -23,7 +23,6 @@ class Candidate(Base):
     source = Column(Text)
     referred_by = Column(Text)
     notes = Column(Text)
-    resume_s3_key = Column(Text)
 
     __table_args__ = (
         CheckConstraint(
