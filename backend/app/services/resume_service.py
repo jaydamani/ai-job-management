@@ -1,4 +1,5 @@
 import logging
+import uuid
 from typing import Any, Dict, List, Optional
 
 import magic
@@ -21,6 +22,7 @@ async def upload_and_analyze(
     candidate: Candidate,
     file_bytes: bytes,
     filename: str,
+    application_id: Optional[uuid.UUID] = None,
 ) -> Dict[str, Any]:
     if len(file_bytes) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File too large (max 5 MB)")
@@ -55,12 +57,15 @@ async def upload_and_analyze(
         logger.warning("Resume parse failed for candidate %s: %s", candidate.id, e)
 
     if parsed_resume:
-        result = await db.execute(
+        query = (
             select(CandidateJobApplication, Job)
             .join(Job, CandidateJobApplication.job_id == Job.id)
             .where(CandidateJobApplication.candidate_id == candidate.id)
-            .order_by(CandidateJobApplication.applied_at.desc())
         )
+        if application_id:
+            query = query.where(CandidateJobApplication.id == application_id)
+        query = query.order_by(CandidateJobApplication.applied_at.desc())
+        result = await db.execute(query)
         rows = result.all()
 
         for app, job in rows:

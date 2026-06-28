@@ -51,3 +51,12 @@ class ResumeUploadResponse(BaseModel):
     fit_explanation: Optional[str] = None
     strengths: Optional[List[str]] = None
     gaps: Optional[List[str]] = None
+
+
+class RescoreResponse(BaseModel):
+    ai_status: str
+    ai_parsed_resume: Optional[Dict[str, Any]] = None
+    fit_score: Optional[int] = None
+    fit_explanation: Optional[str] = None
+    strengths: Optional[List[str]] = None
+    gaps: Optional[List[str]] = None

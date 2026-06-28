@@ -43,6 +43,12 @@ def get_presigned_url(key: str, expires: int = 3600) -> str:
     )
 
 
+def download_resume(key: str) -> bytes:
+    client = _make_client()
+    response = client.get_object(Bucket=settings.S3_BUCKET, Key=key)
+    return response["Body"].read()
+
+
 def ensure_bucket_exists() -> None:
     client = _make_client()
     try:
