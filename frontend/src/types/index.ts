@@ -8,7 +8,7 @@ export interface RecruiterResponse {
 
 export type JobStatus = 'open' | 'closed'
 export type EmploymentType = 'full_time' | 'part_time' | 'contract' | 'internship'
-export type ExperienceLevel = 'entry' | 'mid' | 'senior' | 'lead' | 'executive'
+export type ExperienceLevel = 'junior' | 'mid' | 'senior' | 'lead'
 export type RemoteType = 'onsite' | 'remote' | 'hybrid'
 export type PipelineStatus = 'applied' | 'screened' | 'interviewed' | 'rejected' | 'hired'
 

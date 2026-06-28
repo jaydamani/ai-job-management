@@ -31,7 +31,7 @@ const schema = z
       .enum(['full_time', 'part_time', 'contract', 'internship', ''] as const)
       .optional(),
     experience_level: z
-      .enum(['entry', 'mid', 'senior', 'lead', 'executive', ''] as const)
+      .enum(['junior', 'mid', 'senior', 'lead', ''] as const)
       .optional(),
     remote_type: z.enum(['onsite', 'remote', 'hybrid', ''] as const).optional(),
   })
@@ -474,11 +474,10 @@ export default function JobFormPage() {
                 <label className={labelClass}>Experience Level</label>
                 <select {...register('experience_level')} className={fieldClass}>
                   <option value="">Any</option>
-                  <option value="entry">Entry</option>
+                  <option value="junior">Junior</option>
                   <option value="mid">Mid</option>
                   <option value="senior">Senior</option>
                   <option value="lead">Lead</option>
-                  <option value="executive">Executive</option>
                 </select>
               </div>
               <div>

@@ -312,11 +312,10 @@ export default function JobsPage() {
             onChange={setExperienceLevel}
             options={[
               { value: '', label: 'All levels' },
-              { value: 'entry', label: 'Entry' },
+              { value: 'junior', label: 'Junior' },
               { value: 'mid', label: 'Mid' },
               { value: 'senior', label: 'Senior' },
               { value: 'lead', label: 'Lead' },
-              { value: 'executive', label: 'Executive' },
             ]}
           />
           <SelectFilter
