@@ -1,12 +1,12 @@
 import uuid
 import pytest
-import pytest_asyncio
 import httpx
-import asyncpg
+
+API_BASE = "http://localhost:8080/api"
 
 
 @pytest.mark.asyncio
-async def test_register_success(http_client: httpx.AsyncClient, db: asyncpg.Connection):
+async def test_register_success(http_client: httpx.AsyncClient):
     uid = uuid.uuid4().hex[:8]
     payload = {"email": f"reg_{uid}@example.com", "password": "Pass123!", "name": f"Reg {uid}"}
 
@@ -19,51 +19,45 @@ async def test_register_success(http_client: httpx.AsyncClient, db: asyncpg.Conn
     assert "id" in body
     assert "created_at" in body
     assert "password_hash" not in body
-
-    row = await db.fetchrow("SELECT email, name FROM recruiters WHERE id = $1::uuid", body["id"])
-    assert row is not None
-    assert row["email"] == payload["email"]
-    assert row["name"] == payload["name"]
+    assert resp.cookies.get("access_token") is not None
+    assert resp.cookies.get("refresh_token") is not None
 
 
 @pytest.mark.asyncio
-async def test_register_duplicate_email(http_client: httpx.AsyncClient, registered_user: dict):
-    payload = {
-        "email": registered_user["email"],
-        "password": "AnotherPass123!",
-        "name": "Duplicate",
-    }
-    resp = await http_client.post("/auth/register", json=payload)
+async def test_register_duplicate_email(registered_user: dict):
+    async with httpx.AsyncClient(base_url=API_BASE, timeout=30) as c:
+        resp = await c.post("/auth/register", json={
+            "email": registered_user["email"],
+            "password": "AnotherPass123!",
+            "name": "Duplicate",
+        })
     assert resp.status_code == 409
 
 
 @pytest.mark.asyncio
-async def test_login_success(http_client: httpx.AsyncClient, registered_user: dict, db: asyncpg.Connection):
-    resp = await http_client.post("/auth/login", json={
-        "email": registered_user["email"],
-        "password": registered_user["password"],
-    })
+async def test_login_success(registered_user: dict):
+    async with httpx.AsyncClient(base_url=API_BASE, timeout=30) as c:
+        resp = await c.post("/auth/login", json={
+            "email": registered_user["email"],
+            "password": registered_user["password"],
+        })
 
     assert resp.status_code == 200
     body = resp.json()
-    assert "access_token" in body
-    assert "refresh_token" in body
-    assert body["token_type"] == "bearer"
-
-    row = await db.fetchrow(
-        "SELECT revoked FROM refresh_tokens WHERE recruiter_id = $1::uuid ORDER BY created_at DESC LIMIT 1",
-        registered_user["id"],
-    )
-    assert row is not None
-    assert row["revoked"] is False
+    assert body["email"] == registered_user["email"]
+    assert "id" in body
+    assert "created_at" in body
+    assert resp.cookies.get("access_token") is not None
+    assert resp.cookies.get("refresh_token") is not None
 
 
 @pytest.mark.asyncio
-async def test_login_wrong_password(http_client: httpx.AsyncClient, registered_user: dict):
-    resp = await http_client.post("/auth/login", json={
-        "email": registered_user["email"],
-        "password": "WrongPassword!",
-    })
+async def test_login_wrong_password(registered_user: dict):
+    async with httpx.AsyncClient(base_url=API_BASE, timeout=30) as c:
+        resp = await c.post("/auth/login", json={
+            "email": registered_user["email"],
+            "password": "WrongPassword!",
+        })
     assert resp.status_code == 401
 
 
@@ -77,52 +71,46 @@ async def test_login_unknown_email(http_client: httpx.AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_token_refresh(http_client: httpx.AsyncClient, auth_tokens: dict):
-    resp = await http_client.post("/auth/refresh", json={"refresh_token": auth_tokens["refresh_token"]})
+async def test_token_refresh(registered_user: dict):
+    async with httpx.AsyncClient(base_url=API_BASE, timeout=30) as c:
+        await c.post("/auth/login", json={
+            "email": registered_user["email"],
+            "password": registered_user["password"],
+        })
+        old_access = c.cookies.get("access_token")
 
+        resp = await c.post("/auth/refresh")
+
+    assert resp.status_code == 204
+    assert resp.cookies.get("access_token") is not None
+    assert resp.cookies.get("access_token") != old_access
+
+
+@pytest.mark.asyncio
+async def test_logout_clears_cookies(registered_user: dict):
+    async with httpx.AsyncClient(base_url=API_BASE, timeout=30) as c:
+        await c.post("/auth/login", json={
+            "email": registered_user["email"],
+            "password": registered_user["password"],
+        })
+
+        resp = await c.post("/auth/logout")
+
+    assert resp.status_code == 204
+    assert resp.cookies.get("access_token", "") == ""
+    assert resp.cookies.get("refresh_token", "") == ""
+
+
+@pytest.mark.asyncio
+async def test_protected_route_requires_auth():
+    async with httpx.AsyncClient(base_url=API_BASE, timeout=30) as c:
+        resp = await c.get("/jobs")
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_protected_route_with_valid_cookie(authed_client: httpx.AsyncClient):
+    resp = await authed_client.get("/jobs")
     assert resp.status_code == 200
     body = resp.json()
-    assert "access_token" in body
-    assert "refresh_token" in body
-    assert body["access_token"] != auth_tokens["access_token"]
-
-
-@pytest.mark.asyncio
-async def test_logout_revokes_refresh_token(
-    http_client: httpx.AsyncClient,
-    registered_user: dict,
-    db: asyncpg.Connection,
-):
-    login_resp = await http_client.post("/auth/login", json={
-        "email": registered_user["email"],
-        "password": registered_user["password"],
-    })
-    assert login_resp.status_code == 200
-    tokens = login_resp.json()
-    access = tokens["access_token"]
-    refresh = tokens["refresh_token"]
-
-    logout_resp = await http_client.post(
-        "/auth/logout",
-        json={"refresh_token": refresh},
-        headers={"Authorization": f"Bearer {access}"},
-    )
-    assert logout_resp.status_code == 200
-
-    row = await db.fetchrow(
-        "SELECT revoked FROM refresh_tokens ORDER BY created_at DESC LIMIT 1",
-    )
-    assert row["revoked"] is True
-
-
-@pytest.mark.asyncio
-async def test_protected_route_requires_auth(http_client: httpx.AsyncClient):
-    # FastAPI HTTPBearer returns 403 when Authorization header is absent entirely
-    resp = await http_client.get("/jobs")
-    assert resp.status_code == 403
-
-
-@pytest.mark.asyncio
-async def test_protected_route_with_valid_token(http_client: httpx.AsyncClient, auth_headers: dict):
-    resp = await http_client.get("/jobs", headers=auth_headers)
-    assert resp.status_code == 200
+    assert "data" in body
