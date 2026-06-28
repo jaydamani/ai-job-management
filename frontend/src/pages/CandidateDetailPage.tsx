@@ -69,47 +69,59 @@ interface AiState {
 // ---------------------------------------------------------------------------
 // Fit score ring
 // ---------------------------------------------------------------------------
+function fitLabel(score: number): string {
+  if (score >= 80) return 'Strong Match'
+  if (score >= 60) return 'Good Match'
+  if (score >= 40) return 'Partial Match'
+  return 'Weak Match'
+}
+
 function FitScoreRing({ score }: { score: number }) {
   const color =
     score >= 70 ? '#16a34a' : score >= 40 ? '#d97706' : '#dc2626'
   const bg =
     score >= 70 ? '#dcfce7' : score >= 40 ? '#fef3c7' : '#fee2e2'
-  const size = 88
-  const stroke = 7
+  const labelColor =
+    score >= 70 ? 'text-green-700' : score >= 40 ? 'text-amber-700' : 'text-red-700'
+  const size = 96
+  const stroke = 8
   const r = (size - stroke) / 2
   const circ = 2 * Math.PI * r
   const dash = (score / 100) * circ
 
   return (
-    <div
-      className="relative inline-flex items-center justify-center flex-shrink-0"
-      style={{ width: size, height: size }}
-      role="img"
-      aria-label={`AI fit score: ${score} out of 100`}
-    >
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle
-          cx={size / 2} cy={size / 2} r={r}
-          fill="none" stroke={bg} strokeWidth={stroke}
-        />
-        <circle
-          cx={size / 2} cy={size / 2} r={r}
-          fill="none"
-          stroke={color}
-          strokeWidth={stroke}
-          strokeDasharray={`${dash} ${circ - dash}`}
-          strokeLinecap="round"
-        />
-      </svg>
+    <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
       <div
-        className="absolute inset-0 flex flex-col items-center justify-center"
-        style={{ fontVariantNumeric: 'tabular-nums' }}
+        className="relative inline-flex items-center justify-center"
+        style={{ width: size, height: size }}
+        role="img"
+        aria-label={`AI fit score: ${score} out of 100`}
       >
-        <span className="text-2xl font-bold leading-none" style={{ color }}>
-          {score}
-        </span>
-        <span className="text-xs text-gray-400 leading-none mt-0.5">/ 100</span>
+        <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+          <circle
+            cx={size / 2} cy={size / 2} r={r}
+            fill="none" stroke={bg} strokeWidth={stroke}
+          />
+          <circle
+            cx={size / 2} cy={size / 2} r={r}
+            fill="none"
+            stroke={color}
+            strokeWidth={stroke}
+            strokeDasharray={`${dash} ${circ - dash}`}
+            strokeLinecap="round"
+          />
+        </svg>
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center"
+          style={{ fontVariantNumeric: 'tabular-nums' }}
+        >
+          <span className="text-2xl font-bold leading-none" style={{ color }}>
+            {score}
+          </span>
+          <span className="text-[10px] text-gray-400 leading-none mt-0.5">/ 100</span>
+        </div>
       </div>
+      <span className={`text-xs font-semibold ${labelColor}`}>{fitLabel(score)}</span>
     </div>
   )
 }
@@ -579,6 +591,152 @@ export default function CandidateDetailPage() {
             </dl>
           </section>
 
+          {/* AI Assessment panel — always shown when there's an application */}
+          {currentApp && (
+            <section className="bg-white border border-gray-200 rounded-lg p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">AI Assessment</h2>
+                {effectiveResumeUrl && hasAiData && !aiStatusFailed && (
+                  <button
+                    type="button"
+                    onClick={() => rescoreMutation.mutate()}
+                    disabled={rescoreMutation.isPending}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  >
+                    {rescoreMutation.isPending ? (
+                      <><SpinnerIcon /> Rescoring…</>
+                    ) : (
+                      <>
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Rescore
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* No resume state */}
+              {!effectiveResumeUrl && !uploadMutation.isPending && (
+                <div className="flex flex-col items-center py-10 text-center">
+                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+                    <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium text-gray-700 mb-1">No AI assessment yet</p>
+                  <p className="text-xs text-gray-400">Upload a resume below to get an AI-powered fit score, strengths, and gap analysis.</p>
+                </div>
+              )}
+
+              {/* Uploading in progress */}
+              {uploadMutation.isPending && (
+                <div className="flex items-center gap-3 py-6 justify-center text-sm text-gray-500">
+                  <SpinnerIcon />
+                  <span>Uploading resume and running AI analysis…</span>
+                </div>
+              )}
+
+              {/* Scoring in progress */}
+              {!uploadMutation.isPending && aiState.ai_status && aiState.ai_status !== 'completed' && aiState.ai_status !== 'failed' && (
+                <div className="flex items-center gap-3 py-6 justify-center text-sm text-gray-500">
+                  <SpinnerIcon />
+                  <span>AI scoring {aiState.ai_status}…</span>
+                </div>
+              )}
+
+              {/* Failed state */}
+              {aiStatusFailed && (
+                <div className="p-4 bg-red-50 border border-red-100 rounded-lg flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                    <p className="text-sm text-red-700">AI scoring failed. The resume may be unreadable.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => rescoreMutation.mutate()}
+                    disabled={rescoreMutation.isPending}
+                    className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded border border-red-200 bg-white text-red-700 hover:bg-red-50 disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 flex-shrink-0"
+                  >
+                    {rescoreMutation.isPending ? (
+                      <><SpinnerIcon /> Retrying…</>
+                    ) : (
+                      'Retry'
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Assessment results */}
+              {hasAiData && !aiStatusFailed && (
+                <>
+                  {/* Score + explanation */}
+                  <div className="flex gap-6 mb-5">
+                    {aiState.fit_score != null && (
+                      <FitScoreRing score={aiState.fit_score} />
+                    )}
+                    {aiState.fit_explanation && (
+                      <div className="flex-1 min-w-0 prose prose-sm max-w-none text-gray-700 text-sm leading-relaxed self-center">
+                        <ReactMarkdown>{aiState.fit_explanation}</ReactMarkdown>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Strengths + Gaps */}
+                  {((aiState.strengths && aiState.strengths.length > 0) ||
+                    (aiState.gaps && aiState.gaps.length > 0)) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                      {aiState.strengths && aiState.strengths.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                            Strengths
+                          </p>
+                          <ul className="space-y-2">
+                            {aiState.strengths.map((s, i) => (
+                              <li key={i} className="flex items-start gap-2.5 text-sm text-gray-800 bg-green-50 border border-green-100 rounded-md px-3 py-2 leading-snug">
+                                {s}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {aiState.gaps && aiState.gaps.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                            </svg>
+                            Gaps
+                          </p>
+                          <ul className="space-y-2">
+                            {aiState.gaps.map((g, i) => (
+                              <li key={i} className="flex items-start gap-2.5 text-sm text-gray-800 bg-amber-50 border border-amber-100 rounded-md px-3 py-2 leading-snug">
+                                {g}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Parsed resume accordion */}
+                  {aiState.ai_parsed_resume && (
+                    <div className="mt-4">
+                      <ResumeAccordion raw={aiState.ai_parsed_resume} />
+                    </div>
+                  )}
+                </>
+              )}
+            </section>
+          )}
+
           {/* Resume section */}
           {currentApp && (
             <section className="bg-white border border-gray-200 rounded-lg p-5">
@@ -648,110 +806,6 @@ export default function CandidateDetailPage() {
                       style={{ height: '85vh', minHeight: '600px' }}
                     />
                   </div>
-                </div>
-              )}
-
-              {/* AI status indicators */}
-              {aiState.ai_status && aiState.ai_status !== 'completed' && aiState.ai_status !== 'failed' && (
-                <div className="flex items-center gap-2 mt-3 text-sm text-gray-500">
-                  <SpinnerIcon />
-                  <span>AI scoring {aiState.ai_status}…</span>
-                </div>
-              )}
-
-              {/* Retry scoring */}
-              {aiStatusFailed && (
-                <div className="mt-3 p-3 bg-red-50 border border-red-100 rounded-lg flex items-center justify-between gap-3">
-                  <p className="text-sm text-red-700">AI scoring failed.</p>
-                  <button
-                    type="button"
-                    onClick={() => rescoreMutation.mutate()}
-                    disabled={rescoreMutation.isPending}
-                    className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded border border-red-200 bg-white text-red-700 hover:bg-red-50 disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-                  >
-                    {rescoreMutation.isPending ? (
-                      <><SpinnerIcon /> Rescoring…</>
-                    ) : (
-                      'Retry AI Scoring'
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Resume rescore button when no failure */}
-              {effectiveResumeUrl && !aiStatusFailed && (
-                <div className="mt-3 flex items-center justify-end">
-                  <button
-                    type="button"
-                    onClick={() => rescoreMutation.mutate()}
-                    disabled={rescoreMutation.isPending}
-                    className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
-                  >
-                    {rescoreMutation.isPending ? (
-                      <><SpinnerIcon /> Rescoring…</>
-                    ) : (
-                      'Rescore with AI'
-                    )}
-                  </button>
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* AI panel */}
-          {hasAiData && (
-            <section className="bg-white border border-gray-200 rounded-lg p-5">
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">AI Assessment</h2>
-
-              {/* Score + explanation */}
-              <div className="flex gap-5 mb-5">
-                {aiState.fit_score != null && (
-                  <FitScoreRing score={aiState.fit_score} />
-                )}
-                {aiState.fit_explanation && (
-                  <div className="flex-1 min-w-0 prose prose-sm max-w-none text-gray-700 text-sm leading-relaxed">
-                    <ReactMarkdown>{aiState.fit_explanation}</ReactMarkdown>
-                  </div>
-                )}
-              </div>
-
-              {/* Strengths + Gaps */}
-              {((aiState.strengths && aiState.strengths.length > 0) ||
-                (aiState.gaps && aiState.gaps.length > 0)) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-                  {aiState.strengths && aiState.strengths.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Strengths</p>
-                      <ul className="space-y-1.5">
-                        {aiState.strengths.map((s, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                            <span className="mt-0.5 text-green-500 flex-shrink-0" aria-hidden="true">✓</span>
-                            {s}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {aiState.gaps && aiState.gaps.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Gaps</p>
-                      <ul className="space-y-1.5">
-                        {aiState.gaps.map((g, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                            <span className="mt-0.5 text-amber-500 flex-shrink-0" aria-hidden="true">⚠</span>
-                            {g}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Parsed resume accordion */}
-              {aiState.ai_parsed_resume && (
-                <div className="mt-4">
-                  <ResumeAccordion raw={aiState.ai_parsed_resume} />
                 </div>
               )}
             </section>
