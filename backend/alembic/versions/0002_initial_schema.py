@@ -84,7 +84,6 @@ def upgrade() -> None:
         sa.Column("source", sa.Text),
         sa.Column("referred_by", sa.Text),
         sa.Column("notes", sa.Text),
-        sa.Column("resume_s3_key", sa.Text),
         sa.Column("created_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
         sa.Column("updated_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
         sa.CheckConstraint(
@@ -105,6 +104,10 @@ def upgrade() -> None:
         sa.Column("fit_score", sa.Integer, sa.CheckConstraint("fit_score BETWEEN 0 AND 100", name="chk_fit_score_range")),
         sa.Column("fit_explanation", sa.Text),
         sa.Column("ai_parsed_resume", postgresql.JSONB),
+        sa.Column("strengths", postgresql.JSONB(), nullable=True),
+        sa.Column("gaps", postgresql.JSONB(), nullable=True),
+        sa.Column("ai_status", sa.String(20), nullable=True),
+        sa.Column("resume_s3_key", sa.Text, nullable=True),
         sa.Column("interview_notes", sa.Text),
         sa.Column("applied_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
         sa.Column("created_at", postgresql.TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("NOW()")),
