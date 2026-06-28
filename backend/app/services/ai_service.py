@@ -73,7 +73,11 @@ FIT_SCHEMA = {
 # ── System prompts ─────────────────────────────────────────────────────────────
 
 RESUME_SYSTEM_PROMPT = (
-    "You are a resume data extractor. Extract all structured information from the provided resume images. "
+    "You are a resume data extractor. Extract all structured information from the provided resume. "
+    "Reply ONLY with raw JSON — no markdown fences, no text before or after. "
+    "Use EXACTLY these field names: name, email, phone, current_title, current_company, "
+    "summary, skills, experience, education, total_experience_years. "
+    "Do NOT invent new field names. "
     "Set any field that cannot be determined to null. "
     "skills, experience, and education must always be arrays (empty if none found). "
     "total_experience_years must be a number, not a string."
@@ -81,6 +85,7 @@ RESUME_SYSTEM_PROMPT = (
 
 FIT_SYSTEM_PROMPT = (
     "You are a technical recruiter evaluating candidate-job fit. "
+    "Reply ONLY with raw JSON — no markdown fences, no text before or after. "
     "Score 0–100: 0 means no relevant match, 100 means exact fit on all criteria. "
     "strengths: skills or experiences where the candidate clearly meets or exceeds the role. "
     "gaps: required skills or experience levels the candidate appears to lack. "
@@ -112,8 +117,6 @@ def _pdf_to_image_blocks(pdf_bytes: bytes) -> List[dict]:
 def _completion_kwargs(schema_name: str, schema: dict) -> dict:
     return {
         "model": settings.AI_MODEL,
-        "api_key": settings.OPENROUTER_API_KEY,
-        "api_base": settings.OPENROUTER_API_BASE,
         "response_format": {
             "type": "json_schema",
             "json_schema": {
