@@ -1,6 +1,6 @@
-# Recruiter Management System
+﻿# Recruiter Management System
 
-A full-stack recruiter tool where you manage job openings and candidates with AI-powered resume parsing and fit scoring. Built as a take-home assignment.
+A full-stack recruiter tool where you manage job openings and candidates with AI-powered resume parsing and fit scoring.
 
 **Live:** [https://ai-job-management.onrender.com](https://ai-job-management.onrender.com) *(free tier, give it ~30s to wake)*
 
@@ -32,7 +32,7 @@ Open `http://localhost:8080`
 
 The brief asked for candidates linked to jobs. The obvious move is a foreign key from `candidates` to `jobs`. I didn't do that.
 
-The real shape is many-to-many: For large organisations, it is common to allow applications for different roles (workday does this). If we use a one to many at the start, it will be extremenly painful to migrate as we go further.
+The real shape is many-to-many: For large organisations, it is common to allow applications for different roles (workday does this). If we use a one to many at the start, it will be extremely painful to migrate as we go further.
 
 ```
 candidates <-- candidate_job_applications --> jobs
@@ -44,7 +44,7 @@ One consequence: A candidate submitting a tailored resume for two different role
 
 ### Auth — cookies over tokens-in-localStorage
 
-This is one of those things where coding agents are consistently wrong. It always start with local storage for some reason. Local storage is not meant to be secured so, this can cause trouble in later stages.
+This is one of those things where coding agents are consistently wrong. It always starts with local storage for some reason. Local storage is not meant to be secured so, this can cause trouble in later stages.
 
 This is the current strategy:
 
@@ -53,8 +53,8 @@ JWT access tokens (15-minute TTL) and refresh tokens (30-day TTL) are in httpOnl
 1. httpOnly cookies are inaccessible to JavaScript, so XSS can't steal them.
 2. Refresh tokens need server-side revocation to support real logout. Storing a bcrypt hash of the token in a `refresh_tokens` table makes it a stateful invalidation check — the hash is computed on every refresh, so a stolen token can be revoked.
 
-The tradeoff is CSRF exposure, which is avoided by setting 
-cookies require `Secure=true` and `SameSite=None` which is done by COOKIES_SECURE=TRUE in environment variables.
+
+The tradeoff is CSRF exposure, which is mitigated by requiring `Secure=true` and `SameSite=None` cookies — set via `COOKIE_SECURE=true` in environment variables.
 
 ### AI layer — LiteLLM + structured output + multimodal PDF
 
@@ -62,7 +62,7 @@ Resume parsing needs to return structured data, not prose. The approach:
 
 - **LiteLLM** as the provider abstraction layer. Swap `AI_MODEL` in `.env` to use any provider — currently defaults to Gemini Flash Lite (free tier-friendly), but Claude Sonnet and GPT-4o are drop-in via the same `litellm.acompletion()` call.
 - **JSON Schema structured output** (`response_format: {type: "json_schema", strict: true}`) so the model is forced into the exact shape the code expects. No parsing fragility, no prompt-engineering hoping the model closes its code fences.
-- **pymupdf for multimodal** — each PDF page is rendered to a PNG at 2× zoom (≈144 DPI) and sent as `image_url` blocks. This handles image-only PDFs (scanned documents) that pdfplumber would miss entirely. It also means the model sees the layout, not just extracted text, which matters for two-column resumes.
+- **pymupdf for multimodal** — each PDF page is rendered to a PNG at 2× zoom (~144 DPI) and sent as `image_url` blocks. This handles image-only PDFs (scanned documents) that pdfplumber would miss entirely. It also means the model sees the layout, not just extracted text, which matters for two-column resumes.
 
 The parse and score steps are **separate calls**. This was a deliberate choice: parse once, score many times (against multiple job openings), and rescore cheaply when needed.
 
@@ -145,12 +145,15 @@ Postgres is Render's managed database. For file storage, any S3-compatible servi
 
 ## What I'd Improve With More Time
 
-**Async AI pipeline.** Right now, resume parsing and scoring block the HTTP request — if the AI call takes 10 seconds, the user waits 10 seconds. A background task queue (Celery + Redis, or just FastAPI's `BackgroundTasks` for a simpler version) would let the upload return immediately, with the client polling or receiving a webhook when scoring completes. The `ai_status` column already exists for exactly this — it's just waiting for the async infrastructure.
+**LLM Testing Framework.** Add testing framework for resume parsing and scoring to ensure stability in production and allow experimenting with different models and configurations.
 
-**Skill gap recommendations.** The fit score tells you the number; it doesn't tell you what to do. Given the skills already extracted, a third AI call (after parse + score) could suggest interview questions targeting the gaps, or flag whether the gap is a hard blocker vs. a nice-to-have.
+**Skill gap recommendations.** The fit score only tells you a number. Given the skills already extracted, a third AI call (after parse + score) could suggest interview questions targeting the gaps, or flag whether the gap is a hard blocker vs. a nice-to-have.
 
-**Candidate deduplication.** Nothing prevents the same candidate from being added twice under different jobs. A fuzzy match on email + name at create time would surface likely duplicates before they pollute the pipeline.
+**Candidate Screening.** Create agents to take initial interviews and screen applicants similar to how gappeo currently does it.
 
-**Streaming AI responses.** The multimodal parse step is the slowest part. Streaming tokens to the frontend while parsing would make the latency feel shorter even if the wall-clock time is the same.
+**Improve Skill Parsing** Skill parsing currently normalises without any context about the candidate or the job. We can update the algorithm to utilize the context so that it does not confuse between two same terms across different industries.
 
-**Search.** The current filtering is field-level (skill, status, score range). Full-text search across parsed resume content (using the JSONB `ai_parsed_resume` column + PostgreSQL `tsvector`) would make candidate retrieval much more powerful.
+**Candidate Portal.** Add features that allow candidates to directly apply for different roles.
+
+**Master Data Management.** Add a master admin that can manage master data for an organisation like departments, add or delete recruiters.
+
