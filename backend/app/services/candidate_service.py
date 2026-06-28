@@ -11,6 +11,7 @@ from app.models.application import CandidateJobApplication
 from app.models.job import Job
 from app.schemas.candidate import CandidateCreate, CandidateUpdate
 from app.schemas.pagination import decode_cursor, encode_cursor
+from app.services.skill_taxonomy import normalize_skill_query
 
 
 async def create_candidate(
@@ -241,7 +242,6 @@ async def list_job_candidates(
 
     if skill:
         from sqlalchemy import func, text
-        from app.services.skill_taxonomy import normalize_skill_query
         normalized_skill = normalize_skill_query(skill) or skill
         skill_pattern = f"%{normalized_skill}%"
         query = query.where(

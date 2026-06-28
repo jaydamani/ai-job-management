@@ -7,6 +7,7 @@ import pymupdf as fitz
 import litellm
 
 from app.config import settings
+from app.services.skill_taxonomy import normalize_skills
 
 logger = logging.getLogger(__name__)
 
@@ -132,8 +133,6 @@ def _completion_kwargs(schema_name: str, schema: dict) -> dict:
 # ── Public API ─────────────────────────────────────────────────────────────────
 
 async def parse_resume(pdf_bytes: bytes) -> Dict[str, Any]:
-    from app.services.skill_taxonomy import normalize_skills
-
     image_blocks = _pdf_to_image_blocks(pdf_bytes)
     user_content = [
         {"type": "text", "text": "Extract structured data from this resume."},
