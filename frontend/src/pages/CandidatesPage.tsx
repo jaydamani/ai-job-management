@@ -7,8 +7,17 @@ import type { CandidateWithApplicationResponse, PipelineStatus } from '../types'
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+const PENDING_LABELS: Record<PipelineStatus, string> = {
+  applied: 'Awaiting Screening',
+  screened: 'Awaiting Interview',
+  interviewed: 'Descision Pending',
+  hired: 'Hired',
+  rejected: 'Not Proceeding',
+}
+
 function formatLabel(value: string): string {
-  return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  return PENDING_LABELS[value as PipelineStatus] ?? value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 function formatSalary(min?: number, max?: number): string | null {

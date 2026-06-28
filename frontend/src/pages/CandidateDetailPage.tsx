@@ -9,28 +9,12 @@ import type { PipelineStatus, ApplicationSummaryResponse } from '../types'
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-const PIPELINE_STATUSES: PipelineStatus[] = [
-  'applied',
-  'screened',
-  'interviewed',
-  'rejected',
-  'hired',
-]
-
 const STATUS_COLORS: Record<PipelineStatus, string> = {
   applied:    'bg-blue-100 text-blue-700',
   screened:   'bg-yellow-100 text-yellow-700',
   interviewed:'bg-purple-100 text-purple-700',
   rejected:   'bg-red-100 text-red-700',
   hired:      'bg-green-100 text-green-700',
-}
-
-const STATUS_STEP: Record<PipelineStatus, number> = {
-  applied: 0,
-  screened: 1,
-  interviewed: 2,
-  hired: 3,
-  rejected: -1,
 }
 
 // ---------------------------------------------------------------------------
@@ -44,6 +28,29 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
     year: 'numeric', month: 'short', day: 'numeric',
   })
+}
+
+function getNextStage(current: PipelineStatus): PipelineStatus | null {
+  const order: PipelineStatus[] = ['applied', 'screened', 'interviewed', 'hired']
+  const idx = order.indexOf(current)
+  if (idx === -1 || idx === order.length - 1) return null
+  return order[idx + 1]
+}
+
+const PENDING_LABELS: Record<PipelineStatus, string> = {
+  applied: 'Awaiting Screening',
+  screened: 'Awaiting Interview',
+  interviewed: 'Descision Pending',
+  hired: 'Hired',
+  rejected: 'Not Proceeding',
+}
+
+const ACTION_LABELS: Record<PipelineStatus, string> = {
+  applied: 'Move to Interview',
+  screened: 'Schedule Interview',
+  interviewed: 'Send Offer',
+  hired: '',
+  rejected: '',
 }
 
 // ---------------------------------------------------------------------------
@@ -240,61 +247,6 @@ function ResumeAccordion({ raw }: { raw: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Pipeline stepper
-// ---------------------------------------------------------------------------
-function PipelineStepper({ current }: { current: PipelineStatus }) {
-  const steps: PipelineStatus[] = ['applied', 'screened', 'interviewed', 'hired']
-  const isRejected = current === 'rejected'
-  const currentStep = isRejected ? -1 : STATUS_STEP[current]
-
-  return (
-    <div className="flex items-center gap-0" aria-label="Pipeline progress">
-      {steps.map((step, i) => {
-        const reached = !isRejected && i <= currentStep
-        const isCurrent = !isRejected && i === currentStep
-        return (
-          <React.Fragment key={step}>
-            <div className="flex flex-col items-center" style={{ flex: '0 0 auto' }}>
-              <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold border-2 transition-colors ${
-                  isCurrent
-                    ? 'bg-blue-600 border-blue-600 text-white'
-                    : reached
-                    ? 'bg-blue-100 border-blue-400 text-blue-700'
-                    : 'bg-white border-gray-200 text-gray-400'
-                }`}
-              >
-                {reached && !isCurrent ? (
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  i + 1
-                )}
-              </div>
-              <span
-                className={`mt-1 text-xs leading-tight text-center whitespace-nowrap ${
-                  isCurrent ? 'text-blue-700 font-medium' : reached ? 'text-blue-500' : 'text-gray-400'
-                }`}
-              >
-                {formatLabel(step)}
-              </span>
-            </div>
-            {i < steps.length - 1 && (
-              <div
-                className={`h-0.5 flex-1 mx-1 mb-4 transition-colors ${
-                  !isRejected && i < currentStep ? 'bg-blue-300' : 'bg-gray-200'
-                }`}
-              />
-            )}
-          </React.Fragment>
-        )
-      })}
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
 // Skeleton
 // ---------------------------------------------------------------------------
 function DetailSkeleton() {
@@ -421,8 +373,7 @@ export default function CandidateDetailPage() {
     },
   })
 
-  function handleStatusChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const next = e.target.value as PipelineStatus
+  function handleStatusChange(next: PipelineStatus) {
     prevStatusRef.current = localStatus
     setLocalStatus(next)
     statusMutation.mutate(next)
@@ -544,10 +495,10 @@ export default function CandidateDetailPage() {
       </div>
 
       {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
         {/* Left column — resume + AI */}
-        <div className="lg:col-span-3 space-y-5">
+        <div className="lg:col-span-4 space-y-5">
 
           {/* Candidate detail card */}
           <section className="bg-white border border-gray-200 rounded-lg p-5">
@@ -583,6 +534,48 @@ export default function CandidateDetailPage() {
                 <dt className="text-gray-500 mb-0.5">Added</dt>
                 <dd className="text-gray-900 font-medium">{formatDate(candidate.created_at)}</dd>
               </div>
+              {currentApp && (
+                <div className="sm:col-span-2 pt-3 border-t border-gray-100">
+                  <dt className="text-gray-500 mb-1.5">Pipeline</dt>
+                  <dd>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[currentStatus]}`}>
+                        {PENDING_LABELS[currentStatus]}
+                      </span>
+                      {currentStatus !== 'rejected' && currentStatus !== 'hired' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextStatus = getNextStage(currentStatus)
+                              if (nextStatus) handleStatusChange(nextStatus)
+                            }}
+                            disabled={statusMutation.isPending}
+                            className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                          >
+                            {statusMutation.isPending ? (
+                              <><SpinnerIcon /> Processing…</>
+                            ) : (
+                              <>{ACTION_LABELS[currentStatus]}</>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleStatusChange('rejected')}
+                            disabled={statusMutation.isPending}
+                            className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded border border-red-200 bg-white hover:bg-red-50 text-red-600 disabled:opacity-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1.5 tabular-nums">
+                      Applied {formatDate(currentApp.applied_at)}
+                    </p>
+                  </dd>
+                </div>
+              )}
             </dl>
           </section>
 
@@ -641,6 +634,20 @@ export default function CandidateDetailPage() {
                   </svg>
                   <p className="text-sm text-gray-500">No resume uploaded yet</p>
                   <p className="text-xs text-gray-400 mt-0.5">PDF, max 5 MB</p>
+                </div>
+              )}
+
+              {/* PDF preview */}
+              {effectiveResumeUrl && (
+                <div className="mt-4">
+                  <div className="rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
+                    <iframe
+                      src={effectiveResumeUrl}
+                      title="Resume PDF preview"
+                      className="w-full border-0"
+                      style={{ height: '85vh', minHeight: '600px' }}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -752,55 +759,9 @@ export default function CandidateDetailPage() {
 
         </div>
 
-        {/* Right column — pipeline + other applications */}
-        <div className="lg:col-span-2 space-y-5">
+        {/* Right column — other applications */}
+        {/* <div className="lg:col-span-1 space-y-5">
 
-          {/* Application / pipeline card */}
-          {currentApp && (
-            <section className="bg-white border border-gray-200 rounded-lg p-5">
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Pipeline</h2>
-
-              {/* Stepper */}
-              <div className="mb-5 overflow-x-auto pb-1">
-                <PipelineStepper current={currentStatus} />
-              </div>
-
-              {/* Status selector */}
-              <div>
-                <label
-                  htmlFor="pipeline-status"
-                  className="block text-xs text-gray-500 mb-1.5"
-                >
-                  Move to stage
-                </label>
-                <div className="flex items-center gap-2">
-                  <select
-                    id="pipeline-status"
-                    value={currentStatus}
-                    onChange={handleStatusChange}
-                    disabled={statusMutation.isPending}
-                    className="flex-1 text-sm border border-gray-300 rounded-md px-3 py-1.5 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
-                  >
-                    {PIPELINE_STATUSES.map((s) => (
-                      <option key={s} value={s}>{formatLabel(s)}</option>
-                    ))}
-                  </select>
-                  <span
-                    className={`flex-shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[currentStatus]}`}
-                  >
-                    {formatLabel(currentStatus)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Applied date */}
-              <p className="text-xs text-gray-400 mt-3 tabular-nums">
-                Applied {formatDate(currentApp.applied_at)}
-              </p>
-            </section>
-          )}
-
-          {/* Other applications */}
           {otherApps.length > 0 && (
             <section className="bg-white border border-gray-200 rounded-lg p-5">
               <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
@@ -814,7 +775,7 @@ export default function CandidateDetailPage() {
             </section>
           )}
 
-        </div>
+        </div> */}
       </div>
     </div>
   )
