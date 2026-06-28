@@ -50,29 +50,35 @@ async def _store_refresh_token(
     db.add(row)
 
 
-async def register(db: AsyncSession, email: str, password: str, name: str) -> Recruiter:
+async def register(db: AsyncSession, email: str, password: str, name: str | None = None) -> Recruiter:
     result = await db.execute(select(Recruiter).where(Recruiter.email == email))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Email already registered")
-    recruiter = Recruiter(email=email, password_hash=hash_password(password), name=name)
+    recruiter = Recruiter(email=email, password_hash=hash_password(password), name=name or "")
     db.add(recruiter)
     await db.commit()
     await db.refresh(recruiter)
     return recruiter
 
 
-async def login(db: AsyncSession, email: str, password: str) -> tuple[str, str]:
-    result = await db.execute(select(Recruiter).where(Recruiter.email == email))
-    recruiter = result.scalar_one_or_none()
-    if not recruiter or not verify_password(password, recruiter.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
+async def issue_tokens(db: AsyncSession, recruiter: Recruiter) -> tuple[str, str]:
+    """Create and store a fresh access+refresh token pair for an existing recruiter."""
     access_token = create_access_token(str(recruiter.id))
     token_id = str(uuid.uuid4())
     raw_refresh = _create_refresh_jwt(str(recruiter.id), token_id)
     await _store_refresh_token(db, recruiter.id, token_id, raw_refresh)
     await db.commit()
     return access_token, raw_refresh
+
+
+async def login(db: AsyncSession, email: str, password: str) -> tuple[Recruiter, str, str]:
+    result = await db.execute(select(Recruiter).where(Recruiter.email == email))
+    recruiter = result.scalar_one_or_none()
+    if not recruiter or not verify_password(password, recruiter.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    access_token, raw_refresh = await issue_tokens(db, recruiter)
+    return recruiter, access_token, raw_refresh
 
 
 async def refresh_tokens(db: AsyncSession, raw_refresh: str) -> tuple[str, str]:

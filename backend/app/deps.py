@@ -1,6 +1,5 @@
 import uuid
-from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Cookie, Depends, HTTPException
 from jose import jwt, JWTError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,16 +8,15 @@ from app.database import get_db
 from app.config import settings
 from app.models.recruiter import Recruiter
 
-bearer_scheme = HTTPBearer()
-
 
 async def get_current_recruiter(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    access_token: str = Cookie(None),
     db: AsyncSession = Depends(get_db),
 ) -> Recruiter:
-    token = credentials.credentials
+    if not access_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
+        payload = jwt.decode(access_token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
