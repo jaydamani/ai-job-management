@@ -1,7 +1,8 @@
 import base64
 import json
 import logging
-from typing import Any, Dict, List
+from datetime import date
+from typing import Any, Dict, List, Optional
 
 import pymupdf as fitz
 import litellm
@@ -33,11 +34,14 @@ RESUME_SCHEMA = {
             "items": {
                 "type": "object",
                 "additionalProperties": False,
-                "required": ["title", "company", "duration", "description"],
+                "required": ["title", "company", "start_year", "start_month", "end_year", "end_month", "description"],
                 "properties": {
                     "title":       {"anyOf": [{"type": "string"}, {"type": "null"}]},
                     "company":     {"anyOf": [{"type": "string"}, {"type": "null"}]},
-                    "duration":    {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                    "start_year":  {"anyOf": [{"type": "integer"}, {"type": "null"}]},
+                    "start_month": {"anyOf": [{"type": "integer"}, {"type": "null"}]},
+                    "end_year":    {"anyOf": [{"type": "integer"}, {"type": "null"}]},
+                    "end_month":   {"anyOf": [{"type": "integer"}, {"type": "null"}]},
                     "description": {"anyOf": [{"type": "string"}, {"type": "null"}]},
                 },
             },
@@ -59,6 +63,9 @@ RESUME_SCHEMA = {
     },
 }
 
+# Keep a separate schema name so cached structured-output schemas don't conflict
+_RESUME_SCHEMA_V2_NAME = "resume_extraction_v2"
+
 FIT_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
@@ -73,16 +80,23 @@ FIT_SCHEMA = {
 
 # ── System prompts ─────────────────────────────────────────────────────────────
 
-RESUME_SYSTEM_PROMPT = (
-    "You are a resume data extractor. Extract all structured information from the provided resume. "
-    "Reply ONLY with raw JSON — no markdown fences, no text before or after. "
-    "Use EXACTLY these field names: name, email, phone, current_title, current_company, "
-    "summary, skills, experience, education, total_experience_years. "
-    "Do NOT invent new field names. "
-    "Set any field that cannot be determined to null. "
-    "skills, experience, and education must always be arrays (empty if none found). "
-    "total_experience_years must be a number, not a string."
-)
+def _resume_system_prompt() -> str:
+    today = date.today()
+    return (
+        f"Today's date is {today.strftime('%B %d, %Y')}. "
+        "You are a resume data extractor. Extract all structured information from the provided resume. "
+        "Reply ONLY with raw JSON — no markdown fences, no text before or after. "
+        "Use EXACTLY these field names: name, email, phone, current_title, current_company, "
+        "summary, skills, experience, education, total_experience_years. "
+        "Do NOT invent new field names. "
+        "Set any field that cannot be determined to null. "
+        "skills, experience, and education must always be arrays (empty if none found). "
+        "For each experience entry extract: start_year (integer), start_month (1–12 integer or null), "
+        "end_year (integer or null — null means the role is current/present), "
+        "end_month (1–12 integer or null). "
+        "Use today's date for any role described as current, present, or ongoing. "
+        "total_experience_years must be a number, not a string."
+    )
 
 FIT_SYSTEM_PROMPT = (
     "You are a technical recruiter evaluating candidate-job fit. "
@@ -115,6 +129,36 @@ def _pdf_to_image_blocks(pdf_bytes: bytes) -> List[dict]:
     return blocks
 
 
+def _compute_total_experience_years(experience: List[dict]) -> Optional[float]:
+    """Merge overlapping employment intervals and return total years, rounded to 1 dp."""
+    today = date.today()
+    intervals = []
+    for exp in experience:
+        sy = exp.get("start_year")
+        if not sy:
+            continue
+        sm = exp.get("start_month") or 1
+        ey = exp.get("end_year")
+        em = exp.get("end_month") or 12
+        if ey is None:
+            ey, em = today.year, today.month
+        start = sy * 12 + sm
+        end = ey * 12 + em
+        if end >= start:
+            intervals.append((start, end))
+    if not intervals:
+        return None
+    intervals.sort()
+    merged: List[List[int]] = [list(intervals[0])]
+    for s, e in intervals[1:]:
+        if s <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], e)
+        else:
+            merged.append([s, e])
+    total_months = sum(e - s for s, e in merged)
+    return round(total_months / 12, 1)
+
+
 def _completion_kwargs(schema_name: str, schema: dict) -> dict:
     return {
         "model": settings.AI_MODEL,
@@ -139,15 +183,18 @@ async def parse_resume(pdf_bytes: bytes) -> Dict[str, Any]:
         *image_blocks,
     ]
     response = await litellm.acompletion(
-        **_completion_kwargs("resume_extraction", RESUME_SCHEMA),
+        **_completion_kwargs(_RESUME_SCHEMA_V2_NAME, RESUME_SCHEMA),
         messages=[
-            {"role": "system", "content": RESUME_SYSTEM_PROMPT},
+            {"role": "system", "content": _resume_system_prompt()},
             {"role": "user", "content": user_content},
         ],
         max_tokens=2048,
     )
     data = json.loads(response.choices[0].message.content)
     data["skills"] = normalize_skills(data.get("skills") or [])
+    computed = _compute_total_experience_years(data.get("experience") or [])
+    if computed is not None:
+        data["total_experience_years"] = computed
     return data
 
 

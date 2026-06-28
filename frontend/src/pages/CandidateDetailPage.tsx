@@ -129,14 +129,42 @@ function FitScoreRing({ score }: { score: number }) {
 // ---------------------------------------------------------------------------
 // Parsed resume accordion
 // ---------------------------------------------------------------------------
+interface ExperienceEntry {
+  title?: string
+  company?: string
+  start_year?: number
+  start_month?: number
+  end_year?: number | null
+  end_month?: number | null
+  duration?: string // legacy records parsed before schema change
+  description?: string
+}
+
 interface ParsedResume {
   summary?: string
   skills?: string[]
-  experience?: Array<{ title?: string; company?: string; duration?: string }>
+  experience?: ExperienceEntry[]
   education?: Array<{ degree?: string; institution?: string; year?: string }>
   total_experience_years?: number
   current_title?: string
   current_company?: string
+}
+
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+function formatExpDates(exp: ExperienceEntry): string | null {
+  if (exp.start_year) {
+    const start = exp.start_month
+      ? `${MONTH_NAMES[exp.start_month - 1]} ${exp.start_year}`
+      : `${exp.start_year}`
+    const end = exp.end_year == null
+      ? 'Present'
+      : exp.end_month
+        ? `${MONTH_NAMES[exp.end_month - 1]} ${exp.end_year}`
+        : `${exp.end_year}`
+    return `${start} – ${end}`
+  }
+  return exp.duration ?? null
 }
 
 function ResumeAccordion({ raw }: { raw: Record<string, unknown> | string }) {
@@ -217,17 +245,20 @@ function ResumeAccordion({ raw }: { raw: Record<string, unknown> | string }) {
             <div className="pt-4">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Experience</p>
               <div className="space-y-2">
-                {parsed.experience.map((exp, i) => (
-                  <div key={i} className="text-sm">
-                    <span className="font-medium text-gray-800">{exp.title}</span>
-                    {exp.company && (
-                      <span className="text-gray-500"> · {exp.company}</span>
-                    )}
-                    {exp.duration && (
-                      <span className="text-gray-400 text-xs ml-1">({exp.duration})</span>
-                    )}
-                  </div>
-                ))}
+                {parsed.experience.map((exp, i) => {
+                  const dates = formatExpDates(exp)
+                  return (
+                    <div key={i} className="text-sm">
+                      <span className="font-medium text-gray-800">{exp.title}</span>
+                      {exp.company && (
+                        <span className="text-gray-500"> · {exp.company}</span>
+                      )}
+                      {dates && (
+                        <span className="text-gray-400 text-xs ml-1">({dates})</span>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
