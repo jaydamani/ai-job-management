@@ -252,14 +252,13 @@ async def list_job_candidates(
     if skill:
         from sqlalchemy import func, text
         normalized_skill = normalize_skill_query(skill) or skill
-        skill_pattern = f"%{normalized_skill}%"
         query = query.where(
             func.exists(
                 text(
                     "SELECT 1 FROM jsonb_array_elements_text"
                     "(candidate_job_applications.ai_parsed_resume->'skills') AS s"
-                    " WHERE s ILIKE :skill_pattern"
-                ).bindparams(skill_pattern=skill_pattern)
+                    " WHERE lower(s) = lower(:skill_value)"
+                ).bindparams(skill_value=normalized_skill)
             )
         )
 
