@@ -249,7 +249,7 @@ async def list_job_candidates(
                 text(
                     "SELECT 1 FROM jsonb_array_elements_text"
                     "(candidate_job_applications.ai_parsed_resume->'skills') AS s"
-                    f" WHERE s ILIKE :skill_pattern"
+                    " WHERE s ILIKE :skill_pattern"
                 ).bindparams(skill_pattern=skill_pattern)
             )
         )
