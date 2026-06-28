@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
 import { getJob, listJobCandidates } from '../api/jobs'
 import type { CandidateWithApplicationResponse, PipelineStatus } from '../types'
@@ -84,7 +84,6 @@ function CandidateCard({
   candidate: CandidateWithApplicationResponse
   jobId: string
 }) {
-  const navigate = useNavigate()
   const { application } = candidate
 
   // Pull current_title / current_company from ai_parsed_resume JSON if present
@@ -104,10 +103,9 @@ function CandidateCard({
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => navigate(`/jobs/${jobId}/candidates/${candidate.id}`)}
-      className="w-full text-left bg-white border border-gray-200 rounded-lg p-5 hover:border-blue-300 hover:shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+    <Link
+      to={`/jobs/${jobId}/candidates/${candidate.id}`}
+      className="block w-full text-left bg-white border border-gray-200 rounded-lg p-5 hover:border-blue-300 hover:shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
     >
       <div className="flex items-start justify-between gap-3">
         {/* Left: name + meta */}
@@ -137,7 +135,7 @@ function CandidateCard({
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
       </div>
-    </button>
+    </Link>
   )
 }
 

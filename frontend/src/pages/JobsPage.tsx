@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { listJobs } from '../api/jobs'
 import type { JobResponse } from '../types'
@@ -52,14 +52,11 @@ function SkeletonCard() {
 // Job card
 // ---------------------------------------------------------------------------
 function JobCard({ job }: { job: JobResponse }) {
-  const navigate = useNavigate()
-
   return (
     <div className="bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all">
-      <button
-        type="button"
-        onClick={() => navigate(`/jobs/${job.id}/candidates`)}
-        className="w-full text-left p-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-t-lg"
+      <Link
+        to={`/jobs/${job.id}/candidates`}
+        className="block w-full text-left p-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-t-lg"
       >
         <div className="flex items-start justify-between gap-2 mb-2">
           <h2 className="text-base font-semibold text-gray-900 leading-snug flex-1 min-w-0" style={{ textWrap: 'balance' } as React.CSSProperties}>
@@ -115,19 +112,17 @@ function JobCard({ job }: { job: JobResponse }) {
             </span>
           )}
         </div>
-      </button>
+      </Link>
 
       <div className="px-5 py-2.5 border-t border-gray-100 flex items-center justify-between">
         <Link
           to={`/jobs/${job.id}/candidates`}
-          onClick={(e) => e.stopPropagation()}
           className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors focus:outline-none focus-visible:underline"
         >
           View Candidates →
         </Link>
         <Link
           to={`/jobs/${job.id}`}
-          onClick={(e) => e.stopPropagation()}
           className="text-sm text-gray-400 hover:text-gray-700 transition-colors focus:outline-none focus-visible:underline"
         >
           Edit
