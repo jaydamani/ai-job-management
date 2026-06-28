@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     authApi
       .refresh()
+      .then(setRecruiter)
       .catch(() => {
         // No valid session — isAuthenticated stays false
       })

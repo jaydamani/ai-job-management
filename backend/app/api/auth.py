@@ -39,7 +39,7 @@ async def login(data: LoginRequest, response: Response, db: AsyncSession = Depen
     return recruiter
 
 
-@router.post("/refresh", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/refresh", response_model=RecruiterResponse)
 async def refresh(
     response: Response,
     refresh_token: str = Cookie(None),
@@ -47,8 +47,9 @@ async def refresh(
 ):
     if not refresh_token:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    new_access, new_refresh = await auth_service.refresh_tokens(db, refresh_token)
+    recruiter, new_access, new_refresh = await auth_service.refresh_tokens(db, refresh_token)
     _set_auth_cookies(response, new_access, new_refresh)
+    return recruiter
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

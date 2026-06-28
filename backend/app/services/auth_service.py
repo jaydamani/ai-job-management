@@ -81,7 +81,7 @@ async def login(db: AsyncSession, email: str, password: str) -> tuple[Recruiter,
     return recruiter, access_token, raw_refresh
 
 
-async def refresh_tokens(db: AsyncSession, raw_refresh: str) -> tuple[str, str]:
+async def refresh_tokens(db: AsyncSession, raw_refresh: str) -> tuple[Recruiter, str, str]:
     try:
         payload = jwt.decode(raw_refresh, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
     except JWTError:
@@ -104,6 +104,11 @@ async def refresh_tokens(db: AsyncSession, raw_refresh: str) -> tuple[str, str]:
     if not pwd_context.verify(raw_refresh, row.token_hash):
         raise HTTPException(status_code=401, detail="Invalid refresh token")
 
+    recruiter_result = await db.execute(select(Recruiter).where(Recruiter.id == row.recruiter_id))
+    recruiter = recruiter_result.scalar_one_or_none()
+    if not recruiter:
+        raise HTTPException(status_code=401, detail="Recruiter not found")
+
     row.revoked = True
 
     new_access = create_access_token(recruiter_id)
@@ -111,7 +116,7 @@ async def refresh_tokens(db: AsyncSession, raw_refresh: str) -> tuple[str, str]:
     new_raw = _create_refresh_jwt(recruiter_id, new_token_id)
     await _store_refresh_token(db, row.recruiter_id, new_token_id, new_raw)
     await db.commit()
-    return new_access, new_raw
+    return recruiter, new_access, new_raw
 
 
 async def logout(db: AsyncSession, raw_refresh: str) -> None:

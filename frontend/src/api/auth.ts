@@ -19,7 +19,7 @@ export const authApi = {
   register: (body: RegisterBody) =>
     api.post<RecruiterResponse>('/auth/register', body).then((r) => r.data),
 
-  refresh: () => api.post('/auth/refresh'),
+  refresh: () => api.post<RecruiterResponse>('/auth/refresh').then((r) => r.data),
 
   logout: () => api.post('/auth/logout'),
 }
