@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react'
+import React, { useEffect, useRef, useCallback, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query'
 import { getJob, listJobCandidates } from '../api/jobs'
@@ -188,16 +188,219 @@ function JobHeaderSkeleton() {
 }
 
 // ---------------------------------------------------------------------------
+// Filter bar
+// ---------------------------------------------------------------------------
+const PIPELINE_STATUSES: { value: PipelineStatus; label: string }[] = [
+  { value: 'applied', label: 'Applied' },
+  { value: 'screened', label: 'Screened' },
+  { value: 'interviewed', label: 'Interviewed' },
+  { value: 'hired', label: 'Hired' },
+  { value: 'rejected', label: 'Rejected' },
+]
+
+const MIN_SCORE_OPTIONS = [
+  { value: '', label: 'Any score' },
+  { value: '40', label: '40%+' },
+  { value: '60', label: '60%+' },
+  { value: '70', label: '70%+' },
+  { value: '80', label: '80%+' },
+]
+
+const MIN_EXP_OPTIONS = [
+  { value: '', label: 'Any exp.' },
+  { value: '1', label: '1+ yr' },
+  { value: '3', label: '3+ yrs' },
+  { value: '5', label: '5+ yrs' },
+  { value: '8', label: '8+ yrs' },
+]
+
+function FilterBar({
+  search,
+  onSearch,
+  searchResume,
+  onSearchResume,
+  statusFilter,
+  onStatusFilter,
+  minScore,
+  onMinScore,
+  minExp,
+  onMinExp,
+  skill,
+  onSkill,
+}: {
+  search: string
+  onSearch: (v: string) => void
+  searchResume: boolean
+  onSearchResume: (v: boolean) => void
+  statusFilter: string
+  onStatusFilter: (v: string) => void
+  minScore: string
+  onMinScore: (v: string) => void
+  minExp: string
+  onMinExp: (v: string) => void
+  skill: string
+  onSkill: (v: string) => void
+}) {
+  return (
+    <div className="space-y-2 mb-5">
+      {/* Row 1: search + dropdowns */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        {/* Search */}
+        <div className="relative flex-1">
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 0 5 11a6 6 0 0 0 12 0z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => onSearch(e.target.value)}
+            placeholder="Search name or email…"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => onSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              aria-label="Clear search"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Status filter */}
+        <select
+          value={statusFilter}
+          onChange={(e) => onStatusFilter(e.target.value)}
+          className="text-sm border border-gray-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
+        >
+          <option value="">All stages</option>
+          {PIPELINE_STATUSES.map((s) => (
+            <option key={s.value} value={s.value}>{s.label}</option>
+          ))}
+        </select>
+
+        {/* Min score */}
+        <select
+          value={minScore}
+          onChange={(e) => onMinScore(e.target.value)}
+          className="text-sm border border-gray-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
+        >
+          {MIN_SCORE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Row 2: resume-derived filters */}
+      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+        {/* Skill search */}
+        <div className="relative flex-1">
+          <input
+            type="text"
+            value={skill}
+            onChange={(e) => onSkill(e.target.value)}
+            placeholder="Filter by skill (e.g. React, Python)…"
+            className="w-full pl-3 pr-3 py-2 text-sm border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400"
+          />
+          {skill && (
+            <button
+              type="button"
+              onClick={() => onSkill('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              aria-label="Clear skill"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Min experience */}
+        <select
+          value={minExp}
+          onChange={(e) => onMinExp(e.target.value)}
+          className="text-sm border border-gray-200 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
+        >
+          {MIN_EXP_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+
+        {/* Search resume toggle */}
+        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none whitespace-nowrap">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={searchResume}
+            onClick={() => onSearchResume(!searchResume)}
+            className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              searchResume ? 'bg-blue-600' : 'bg-gray-200'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                searchResume ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
+          Search resume
+        </label>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 export default function CandidatesPage() {
   const { jobId } = useParams<{ jobId: string }>()
+
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [searchResume, setSearchResume] = useState(false)
+  const [statusFilter, setStatusFilter] = useState('')
+  const [minScore, setMinScore] = useState('')
+  const [minExp, setMinExp] = useState('')
+  const [skill, setSkill] = useState('')
+  const [debouncedSkill, setDebouncedSkill] = useState('')
+
+  // Debounce text inputs by 300 ms
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(t)
+  }, [search])
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSkill(skill), 300)
+    return () => clearTimeout(t)
+  }, [skill])
 
   const { data: job, isLoading: jobLoading } = useQuery({
     queryKey: ['job', jobId],
     queryFn: () => getJob(jobId!),
     enabled: Boolean(jobId),
   })
+
+  const filterKey = {
+    status: statusFilter,
+    min_score: minScore,
+    search: debouncedSearch,
+    search_resume: searchResume,
+    min_experience: minExp,
+    skill: debouncedSkill,
+  }
 
   const {
     data,
@@ -207,9 +410,17 @@ export default function CandidatesPage() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['candidates', jobId],
+    queryKey: ['candidates', jobId, filterKey],
     queryFn: ({ pageParam }) =>
-      listJobCandidates(jobId!, (pageParam as string | null) ?? undefined),
+      listJobCandidates(jobId!, {
+        cursor: (pageParam as string | null) ?? undefined,
+        status: statusFilter || undefined,
+        min_score: minScore ? Number(minScore) : undefined,
+        search: debouncedSearch || undefined,
+        search_resume: debouncedSearch ? searchResume : undefined,
+        min_experience: minExp ? Number(minExp) : undefined,
+        skill: debouncedSkill || undefined,
+      }),
     getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
     initialPageParam: null as string | null,
     enabled: Boolean(jobId),
@@ -217,6 +428,14 @@ export default function CandidatesPage() {
 
   const candidates: CandidateWithApplicationResponse[] =
     data?.pages.flatMap((page) => page.data) ?? []
+
+  const activeFilterCount = [
+    statusFilter,
+    minScore,
+    debouncedSearch,
+    minExp,
+    debouncedSkill,
+  ].filter(Boolean).length
 
   // Infinite scroll sentinel
   const sentinelRef = useRef<HTMLDivElement | null>(null)
@@ -334,7 +553,14 @@ export default function CandidatesPage() {
 
       {/* Candidates section header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Candidates</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          Candidates
+          {activeFilterCount > 0 && (
+            <span className="ml-2 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+              {activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''}
+            </span>
+          )}
+        </h2>
         <Link
           to={`/jobs/${jobId}/candidates/new`}
           className="inline-flex items-center gap-1.5 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
@@ -345,6 +571,21 @@ export default function CandidatesPage() {
           Add Candidate
         </Link>
       </div>
+
+      <FilterBar
+        search={search}
+        onSearch={setSearch}
+        searchResume={searchResume}
+        onSearchResume={setSearchResume}
+        statusFilter={statusFilter}
+        onStatusFilter={setStatusFilter}
+        minScore={minScore}
+        onMinScore={setMinScore}
+        minExp={minExp}
+        onMinExp={setMinExp}
+        skill={skill}
+        onSkill={setSkill}
+      />
 
       {/* Error state */}
       {isError && (
@@ -379,17 +620,33 @@ export default function CandidatesPage() {
               d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
             />
           </svg>
-          <p className="text-gray-500 text-lg font-medium mb-1">No candidates yet</p>
-          <p className="text-gray-400 text-sm mb-6">Add your first candidate to start building the pipeline.</p>
-          <Link
-            to={`/jobs/${jobId}/candidates/new`}
-            className="inline-flex items-center gap-1.5 bg-blue-600 text-white px-5 py-2.5 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Add Candidate
-          </Link>
+          {activeFilterCount > 0 ? (
+            <>
+              <p className="text-gray-500 text-lg font-medium mb-1">No matches</p>
+              <p className="text-gray-400 text-sm mb-6">Try adjusting or clearing your filters.</p>
+              <button
+                type="button"
+                onClick={() => { setSearch(''); setStatusFilter(''); setMinScore(''); setMinExp(''); setSkill(''); setSearchResume(false) }}
+                className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Clear all filters
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-gray-500 text-lg font-medium mb-1">No candidates yet</p>
+              <p className="text-gray-400 text-sm mb-6">Add your first candidate to start building the pipeline.</p>
+              <Link
+                to={`/jobs/${jobId}/candidates/new`}
+                className="inline-flex items-center gap-1.5 bg-blue-600 text-white px-5 py-2.5 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Candidate
+              </Link>
+            </>
+          )}
         </div>
       )}
 

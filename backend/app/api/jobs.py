@@ -87,10 +87,26 @@ async def list_job_candidates(
     job_id: UUID,
     cursor: Optional[str] = Query(None),
     limit: int = Query(20, ge=1, le=100),
+    pipeline_status: Optional[str] = Query(None, alias="status"),
+    min_score: Optional[int] = Query(None, ge=0, le=100),
+    search: Optional[str] = Query(None),
+    search_resume: bool = Query(False),
+    min_experience: Optional[float] = Query(None, ge=0),
+    skill: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: Recruiter = Depends(get_current_recruiter),
 ):
     items, next_cursor, has_more = await candidate_service.list_job_candidates(
-        db, job_id, current_user.id, cursor=cursor, limit=limit
+        db,
+        job_id,
+        current_user.id,
+        cursor=cursor,
+        limit=limit,
+        pipeline_status=pipeline_status,
+        min_score=min_score,
+        search=search,
+        search_resume=search_resume,
+        min_experience=min_experience,
+        skill=skill,
     )
     return PaginatedResponse(data=items, next_cursor=next_cursor, has_more=has_more)

@@ -69,13 +69,31 @@ export function closeJob(id: string): Promise<{ id: string; status: string; upda
   return api.patch<{ id: string; status: string; updated_at: string }>(`/jobs/${id}/close`).then((r) => r.data)
 }
 
+export interface CandidatesFilter {
+  cursor?: string
+  status?: string
+  min_score?: number
+  search?: string
+  search_resume?: boolean
+  min_experience?: number
+  skill?: string
+}
+
 export function listJobCandidates(
   jobId: string,
-  cursor?: string
+  filter?: CandidatesFilter
 ): Promise<PaginatedResponse<CandidateWithApplicationResponse>> {
+  const params: Record<string, string | number | boolean> = {}
+  if (filter?.cursor) params.cursor = filter.cursor
+  if (filter?.status) params.status = filter.status
+  if (filter?.min_score != null) params.min_score = filter.min_score
+  if (filter?.search) params.search = filter.search
+  if (filter?.search_resume) params.search_resume = true
+  if (filter?.min_experience != null) params.min_experience = filter.min_experience
+  if (filter?.skill) params.skill = filter.skill
   return api
     .get<PaginatedResponse<CandidateWithApplicationResponse>>(`/jobs/${jobId}/candidates`, {
-      params: cursor ? { cursor } : undefined,
+      params: Object.keys(params).length ? params : undefined,
     })
     .then((r) => r.data)
 }

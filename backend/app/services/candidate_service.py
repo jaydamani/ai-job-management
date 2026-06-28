@@ -192,6 +192,12 @@ async def list_job_candidates(
     recruiter_id: uuid.UUID,
     cursor: Optional[str] = None,
     limit: int = 20,
+    pipeline_status: Optional[str] = None,
+    min_score: Optional[int] = None,
+    search: Optional[str] = None,
+    search_resume: bool = False,
+    min_experience: Optional[float] = None,
+    skill: Optional[str] = None,
 ) -> tuple:
     job_result = await db.execute(
         select(Job).where(Job.id == job_id, Job.recruiter_id == recruiter_id)
@@ -205,6 +211,46 @@ async def list_job_candidates(
         .join(Candidate, CandidateJobApplication.candidate_id == Candidate.id)
         .where(CandidateJobApplication.job_id == job_id)
     )
+
+    if pipeline_status:
+        query = query.where(CandidateJobApplication.status == pipeline_status)
+
+    if min_score is not None:
+        query = query.where(CandidateJobApplication.fit_score >= min_score)
+
+    if search:
+        pattern = f"%{search}%"
+        conditions = [
+            Candidate.name.ilike(pattern),
+            Candidate.email == search,
+            Candidate.phone.ilike(pattern),
+        ]
+        if search_resume:
+            from sqlalchemy import cast, String
+            conditions.append(cast(CandidateJobApplication.ai_parsed_resume, String).ilike(pattern))
+        query = query.where(or_(*conditions))
+
+    if min_experience is not None:
+        from sqlalchemy import func, cast as sa_cast, Float
+        query = query.where(
+            sa_cast(
+                func.jsonb_extract_path_text(CandidateJobApplication.ai_parsed_resume, "total_experience_years"),
+                Float,
+            ) >= min_experience
+        )
+
+    if skill:
+        from sqlalchemy import func, text
+        skill_pattern = f"%{skill}%"
+        query = query.where(
+            func.exists(
+                text(
+                    "SELECT 1 FROM jsonb_array_elements_text"
+                    "(candidate_job_applications.ai_parsed_resume->'skills') AS s"
+                    f" WHERE s ILIKE :skill_pattern"
+                ).bindparams(skill_pattern=skill_pattern)
+            )
+        )
 
     if cursor:
         parts = decode_cursor(cursor)
