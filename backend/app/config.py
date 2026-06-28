@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     MINIO_PUBLIC_URL: str = ""
 
     CORS_ORIGINS: str = "http://localhost:5173"
+    # Set to true in production (HTTPS). Enables secure + SameSite=None cookies
+    # required for cross-origin deploys (e.g. Render static site + web service).
+    COOKIE_SECURE: bool = False
 
     @property
     def cors_origins_list(self) -> List[str]:

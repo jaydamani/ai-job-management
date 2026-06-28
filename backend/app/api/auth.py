@@ -7,11 +7,16 @@ from app.schemas.auth import (
     RecruiterResponse,
     RegisterRequest,
 )
+from app.config import settings
 from app.services import auth_service
 
 router = APIRouter()
 
-_COOKIE_OPTS = dict(httponly=True, samesite="lax", secure=False)
+_COOKIE_OPTS = dict(
+    httponly=True,
+    secure=settings.COOKIE_SECURE,
+    samesite="none" if settings.COOKIE_SECURE else "lax",
+)
 
 
 def _set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
