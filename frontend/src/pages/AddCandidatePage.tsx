@@ -296,8 +296,7 @@ function Step2({ jobId, file, onBack }: Step2Props) {
     let applicationId: string
 
     try {
-      // POST /candidates with job_id creates candidate + application atomically
-      const application = await createCandidate({
+      const candidate = await createCandidate({
         name: data.name,
         email: data.email,
         phone: data.phone || undefined,
@@ -318,8 +317,8 @@ function Step2({ jobId, file, onBack }: Step2Props) {
         notes: data.notes || undefined,
         job_id: jobId,
       })
-      candidateId = application.candidate_id
-      applicationId = application.id
+      candidateId = candidate.id
+      applicationId = candidate.applications[0]?.id
     } catch {
       setSubmitError('Failed to save candidate. Please try again.')
       setSubmitting(false)

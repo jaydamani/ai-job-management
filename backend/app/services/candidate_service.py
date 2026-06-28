@@ -15,7 +15,7 @@ from app.schemas.pagination import decode_cursor, encode_cursor
 
 async def create_candidate(
     db: AsyncSession, recruiter_id: uuid.UUID, data: CandidateCreate
-) -> Candidate:
+) -> tuple:
     result = await db.execute(
         select(Candidate).where(
             Candidate.recruiter_id == recruiter_id,
@@ -24,11 +24,38 @@ async def create_candidate(
     )
     if result.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Candidate with this email already exists")
-    candidate = Candidate(recruiter_id=recruiter_id, **data.model_dump())
+
+    candidate_fields = data.model_dump(exclude={'job_id'})
+    candidate = Candidate(recruiter_id=recruiter_id, **candidate_fields)
     db.add(candidate)
+    await db.flush()
+
+    application_dict = None
+    if data.job_id:
+        job_result = await db.execute(
+            select(Job).where(Job.id == data.job_id, Job.recruiter_id == recruiter_id)
+        )
+        job = job_result.scalar_one_or_none()
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        application = CandidateJobApplication(candidate_id=candidate.id, job_id=data.job_id)
+        db.add(application)
+        await db.flush()
+        application_dict = {
+            "id": application.id,
+            "job_id": application.job_id,
+            "job_title": job.title,
+            "status": application.status,
+            "fit_score": application.fit_score,
+            "fit_explanation": application.fit_explanation,
+            "resume_s3_key": application.resume_s3_key,
+            "applied_at": application.applied_at,
+            "updated_at": application.updated_at,
+        }
+
     await db.commit()
     await db.refresh(candidate)
-    return candidate
+    return candidate, [application_dict] if application_dict else []
 
 
 async def get_candidate(

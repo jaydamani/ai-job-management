@@ -39,13 +39,16 @@ async def list_candidates(
     return PaginatedResponse(data=candidates, next_cursor=next_cursor, has_more=has_more)
 
 
-@router.post("", response_model=CandidateResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=CandidateDetailResponse, status_code=status.HTTP_201_CREATED)
 async def create_candidate(
     data: CandidateCreate,
     db: AsyncSession = Depends(get_db),
     current_user: Recruiter = Depends(get_current_recruiter),
 ):
-    return await candidate_service.create_candidate(db, current_user.id, data)
+    candidate, app_dicts = await candidate_service.create_candidate(db, current_user.id, data)
+    result = CandidateDetailResponse.model_validate(candidate)
+    result.applications = [ApplicationSummaryResponse.model_validate(d) for d in app_dicts]
+    return result
 
 
 @router.get("/{candidate_id}", response_model=CandidateDetailResponse)

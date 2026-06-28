@@ -81,7 +81,7 @@ export interface CandidateCreate {
   notice_period_days?: number
   source?: string
   notes?: string
-  job_id: string
+  job_id?: string
 }
 
 export interface ApplicationSummaryResponse {

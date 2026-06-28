@@ -10,8 +10,8 @@ import type {
 // ---------------------------------------------------------------------------
 // Named function exports (spec-required interface)
 // ---------------------------------------------------------------------------
-export function createCandidate(data: CandidateCreate): Promise<ApplicationResponse> {
-  return api.post<ApplicationResponse>('/candidates', data).then((r) => r.data)
+export function createCandidate(data: CandidateCreate): Promise<CandidateDetailResponse> {
+  return api.post<CandidateDetailResponse>('/candidates', data).then((r) => r.data)
 }
 
 export function getCandidate(id: string): Promise<CandidateDetailResponse> {
@@ -58,7 +58,7 @@ export function rescore(candidateId: string, applicationId: string): Promise<Res
 
 export const candidatesApi = {
   create: (body: CandidateCreate) =>
-    api.post<ApplicationResponse>('/candidates', body).then((r) => r.data),
+    api.post<CandidateDetailResponse>('/candidates', body).then((r) => r.data),
 
   get: (id: string) =>
     api.get<CandidateDetailResponse>(`/candidates/${id}`).then((r) => r.data),

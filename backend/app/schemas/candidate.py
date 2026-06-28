@@ -21,6 +21,7 @@ class CandidateCreate(BaseModel):
     source: Optional[str] = None
     referred_by: Optional[str] = None
     notes: Optional[str] = None
+    job_id: Optional[UUID] = None
 
 
 class CandidateUpdate(BaseModel):
