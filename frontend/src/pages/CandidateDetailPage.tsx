@@ -61,7 +61,7 @@ interface AiState {
   fit_explanation?: string
   strengths?: string[]
   gaps?: string[]
-  ai_parsed_resume?: string
+  ai_parsed_resume?: Record<string, unknown>
   ai_status?: string
   resume_url?: string
 }
@@ -139,14 +139,14 @@ interface ParsedResume {
   current_company?: string
 }
 
-function ResumeAccordion({ raw }: { raw: string }) {
+function ResumeAccordion({ raw }: { raw: Record<string, unknown> | string }) {
   const [open, setOpen] = useState(false)
   const [parsed, setParsed] = useState<ParsedResume | null>(null)
 
   useEffect(() => {
     try {
       const data = typeof raw === 'string' ? JSON.parse(raw) : raw
-      setParsed(data)
+      setParsed(data as ParsedResume)
     } catch {
       setParsed(null)
     }
@@ -322,8 +322,11 @@ export default function CandidateDetailPage() {
       setAiState({
         fit_score: appSummary.fit_score,
         fit_explanation: appSummary.fit_explanation,
+        strengths: appSummary.strengths,
+        gaps: appSummary.gaps,
+        ai_parsed_resume: appSummary.ai_parsed_resume,
+        ai_status: appSummary.ai_status,
         resume_url: appSummary.resume_url,
-        // strengths/gaps/ai_parsed_resume/ai_status not in summary — start empty
       })
       setLocalStatus(appSummary.status)
     }
@@ -639,7 +642,7 @@ export default function CandidateDetailPage() {
               )}
 
               {/* Scoring in progress */}
-              {!uploadMutation.isPending && aiState.ai_status && aiState.ai_status !== 'completed' && aiState.ai_status !== 'failed' && (
+              {!uploadMutation.isPending && aiState.ai_status && aiState.ai_status !== 'complete' && aiState.ai_status !== 'failed' && (
                 <div className="flex items-center gap-3 py-6 justify-center text-sm text-gray-500">
                   <SpinnerIcon />
                   <span>AI scoring {aiState.ai_status}…</span>

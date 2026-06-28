@@ -91,6 +91,10 @@ export interface ApplicationSummaryResponse {
   status: PipelineStatus
   fit_score?: number
   fit_explanation?: string
+  strengths?: string[]
+  gaps?: string[]
+  ai_parsed_resume?: Record<string, unknown>
+  ai_status?: string
   resume_url?: string
   applied_at: string
   updated_at: string
@@ -125,7 +129,7 @@ export interface ApplicationInCandidateList {
   fit_explanation?: string
   strengths?: string[]
   gaps?: string[]
-  ai_parsed_resume?: string
+  ai_parsed_resume?: Record<string, unknown>
   ai_status?: string
   resume_url?: string
   applied_at: string
@@ -151,7 +155,7 @@ export interface ApplicationResponse {
   status: PipelineStatus
   fit_score?: number
   fit_explanation?: string
-  ai_parsed_resume?: string
+  ai_parsed_resume?: Record<string, unknown>
   interview_notes?: string
   strengths?: string[]
   gaps?: string[]
@@ -164,7 +168,7 @@ export interface ApplicationResponse {
 export interface ResumeUploadResponse {
   resume_url: string
   ai_status: string
-  ai_parsed_resume?: string
+  ai_parsed_resume?: Record<string, unknown>
   fit_score?: number
   fit_explanation?: string
   strengths?: string[]
@@ -173,7 +177,7 @@ export interface ResumeUploadResponse {
 
 export interface RescoreResponse {
   ai_status: string
-  ai_parsed_resume?: string
+  ai_parsed_resume?: Record<string, unknown>
   fit_score?: number
   fit_explanation?: string
   strengths?: string[]

@@ -48,6 +48,10 @@ class ApplicationSummaryResponse(BaseModel):
     status: str
     fit_score: Optional[int] = None
     fit_explanation: Optional[str] = None
+    strengths: Optional[List[str]] = None
+    gaps: Optional[List[str]] = None
+    ai_parsed_resume: Optional[Dict[str, Any]] = None
+    ai_status: Optional[str] = None
     resume_s3_key: Optional[str] = Field(default=None, exclude=True)
     resume_url: Optional[str] = None
     applied_at: datetime
