@@ -168,7 +168,8 @@ async def list_job_candidates(
     job_result = await db.execute(
         select(Job).where(Job.id == job_id, Job.recruiter_id == recruiter_id)
     )
-    if not job_result.scalar_one_or_none():
+    job = job_result.scalar_one_or_none()
+    if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
     query = (
@@ -226,6 +227,9 @@ async def list_job_candidates(
     if has_more:
         rows = rows[:limit]
 
+    if not rows:
+        return [], None, False
+
     items = []
     for app, candidate in rows:
         score_str = str(app.fit_score) if app.fit_score is not None else "null"
@@ -234,12 +238,25 @@ async def list_job_candidates(
             "name": candidate.name,
             "email": candidate.email,
             "phone": candidate.phone,
+            "location_preference": candidate.location_preference,
+            "linkedin_url": candidate.linkedin_url,
+            "portfolio_url": candidate.portfolio_url,
+            "github_url": candidate.github_url,
             "resume_s3_key": candidate.resume_s3_key,
-            "application_id": app.id,
-            "application_status": app.status,
-            "fit_score": app.fit_score,
-            "fit_explanation": app.fit_explanation,
-            "applied_at": app.applied_at,
+            "created_at": candidate.created_at,
+            "application": {
+                "id": app.id,
+                "job_id": app.job_id,
+                "job_title": job.title,
+                "status": app.status,
+                "fit_score": app.fit_score,
+                "fit_explanation": app.fit_explanation,
+                "strengths": app.strengths,
+                "gaps": app.gaps,
+                "ai_parsed_resume": app.ai_parsed_resume,
+                "ai_status": app.ai_status,
+                "applied_at": app.applied_at,
+            },
             "_cursor_parts": (score_str, app.applied_at.isoformat(), str(app.id)),
         })
 

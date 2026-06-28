@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -76,6 +76,22 @@ class CandidateDetailResponse(CandidateResponse):
     applications: List[ApplicationSummaryResponse] = []
 
 
+class ApplicationInCandidateList(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    job_id: UUID
+    job_title: Optional[str] = None
+    status: str
+    fit_score: Optional[int] = None
+    fit_explanation: Optional[str] = None
+    strengths: Optional[List[str]] = None
+    gaps: Optional[List[str]] = None
+    ai_parsed_resume: Optional[Dict[str, Any]] = None
+    ai_status: Optional[str] = None
+    applied_at: datetime
+
+
 class CandidateWithApplicationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -83,13 +99,14 @@ class CandidateWithApplicationResponse(BaseModel):
     name: str
     email: str
     phone: Optional[str] = None
+    location_preference: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    github_url: Optional[str] = None
     resume_s3_key: Optional[str] = Field(default=None, exclude=True)
     resume_url: Optional[str] = None
-    application_id: UUID
-    application_status: str
-    fit_score: Optional[int] = None
-    fit_explanation: Optional[str] = None
-    applied_at: datetime
+    created_at: datetime
+    application: ApplicationInCandidateList
 
     @model_validator(mode='after')
     def set_resume_url(self) -> 'CandidateWithApplicationResponse':
