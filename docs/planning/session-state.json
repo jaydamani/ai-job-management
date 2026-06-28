@@ -1,7 +1,7 @@
 {
-  "sessionId": "2026-06-24-feature",
-  "startedAt": "2026-06-24T00:00:00Z",
-  "endedAt": "2026-06-24T00:00:00Z",
+  "sessionId": "2026-06-28d-feature",
+  "startedAt": "2026-06-28T00:00:00Z",
+  "endedAt": "2026-06-28T00:00:00Z",
   "status": "ended",
   "focus": "feature",
   "completedTasks": [
@@ -9,12 +9,34 @@
     "Module 1 - Auth: register/login, JWT 15min + refresh token (JWT-wrapped UUID), bcrypt rounds=12, server-side revocation",
     "Module 2 - Jobs: CRUD + cursor pagination + filter (status, title, dept, location, emp_type, exp_level, remote_type)",
     "Module 3 - Candidates: CRUD + PDF upload + AI parsing/scoring + pipeline status + application management",
-    "Alembic migrations: 4 migration files (enum types, trigger function, all tables with indexes, updated_at triggers)",
-    "Infrastructure: docker-compose (postgres + minio + backend + nginx), nginx.conf, Dockerfile, .env.example"
+    "Alembic migrations: 3 migration files (trigger fn, full schema + enums, attach triggers)",
+    "Infrastructure: docker-compose (postgres + minio + backend + nginx), nginx.conf, Dockerfile, .env.example",
+    "AI service: OpenRouter routing + json_schema structured output + multimodal PDF via pymupdf",
+    "Fixed Alembic DuplicateObjectError: sa.Enum create_type=False ignored by SQLAlchemy 2.x asyncpg; rearranged to 3 migrations",
+    "Frontend PRD: created gappeo-frontend.md from live OpenAPI spec; all 15 endpoints documented; component tree, route table, API client pattern",
+    "Backend API fixes: presigned resume_url via model_validator; job_title in ApplicationSummaryResponse; ai_status values confirmed (complete/failed)",
+    "Frontend PRD validated (88%): all 5 PO questions resolved — cookie auth, strengths/gaps types, markdown rendering, same-tab navigation, mid-flow failure AC",
+    "Frontend PRD re-validated (93%): 6 new gaps resolved — Auth API table (cookie contract), CandidateWithApplications full interface, optimistic rollback AC, tag input behavior, Zod validation tables, AI rescore endpoint specified",
+    "Frontend PRD fourth pass (93%): fixed blocking localStorage stale line in LoginPage spec; 6 new non-blocking gaps documented; PRD implementation-ready",
+    "Frontend PRD enriched: 4 HIGH schema mismatches discovered (flat vs nested response, parsed_resume key, strengths/gaps discarded, ai_status missing); risk register + complexity estimate (L)",
+    "Frontend PRD broken down: 15 work items (WI-001 through WI-015) with Linear-style descriptions, dependency graph, 65-95h total estimate",
+    "WI-001: Alembic migration 0004 — ADD COLUMN strengths JSONB, gaps JSONB, ai_status VARCHAR(20) to candidate_job_applications; updated CandidateJobApplication model",
+    "WI-002: Cookie auth migration — deps.py Cookie param, auth.py Set-Cookie helpers, schemas/auth.py cleaned, auth_service.py issue_tokens() extracted",
+    "WI-003: Strengths/gaps persistence + schema alignment (resume_service.py wiring; parsed_resume → ai_parsed_resume; strengths/gaps/ai_status added to ApplicationResponse + ResumeUploadResponse)",
+    "WI-004: CandidateWithApplicationResponse reshape — nested application:{id,job_id,job_title,status,fit_score,strengths,gaps,ai_parsed_resume,ai_status,applied_at}",
+    "WI-005: Rescore endpoint (POST /candidates/:id/applications/:appId/rescore) + resume upload path fix (include appId); RescoreResponse schema; storage_service.download_resume()"
   ],
   "pendingTasks": [
-    "Module 4 - Frontend: React/TypeScript UI (login, register, jobs list+filters, job detail, candidate list, candidate detail with AI panel, resume upload)",
-    "README.md"
+    "WI-006: Frontend scaffold — Tailwind, routing, Axios client + interceptor, AuthContext with session restore",
+    "WI-007: Login + Register pages",
+    "WI-008: Jobs list page — filters + infinite scroll",
+    "WI-009: Job form page — create + edit + close",
+    "WI-010: Candidates list page — infinite scroll + fit score badges",
+    "WI-011: Add Candidate page — two-step flow",
+    "WI-012: Candidate Detail page — pipeline selector (optimistic), resume section, AI panel, other applications",
+    "WI-013: Backend test updates (cookie auth + new response shapes; also fix ai_status=failed on parse-failure path)",
+    "WI-014: Frontend integration + smoke tests",
+    "WI-015: README.md"
   ],
   "backlogTasks": [
     "Bulk resume upload with ranking (bonus)"
@@ -26,13 +48,28 @@
     "score": 81,
     "importedAt": "2026-06-22T00:00:00Z",
     "initiativeId": null,
-    "nextStep": "Frontend scaffold"
+    "nextStep": "Frontend implementation"
+  },
+  "prdIntakeFrontend": {
+    "prd": "gappeo-frontend",
+    "file": "docs/planning/prds/gappeo-frontend.md",
+    "status": "enriched",
+    "score": 93,
+    "importedAt": "2026-06-25T00:00:00Z",
+    "validatedAt": "2026-06-28T00:00:00Z",
+    "enrichedAt": "2026-06-28T00:00:00Z",
+    "breakdownAt": "2026-06-28T00:00:00Z",
+    "source": "file://Gappeo_Assignment.md + file://docs/planning/prds/gappeo-recruiter-management-system.md",
+    "parentPrd": "gappeo-recruiter-management-system",
+    "breakdownFile": "docs/planning/prds/gappeo-frontend-breakdown.md",
+    "workItems": 15,
+    "nextStep": "WI-006 (frontend scaffold)"
   },
   "integrations": {},
   "project": {
     "name": "gappeo",
-    "stack": ["FastAPI", "PostgreSQL", "Cloudflare R2", "React", "TypeScript", "JWT", "Nginx", "Docker Compose", "LiteLLM"],
-    "aiModel": "claude-sonnet-4-6",
+    "stack": ["FastAPI", "PostgreSQL", "Cloudflare R2", "React", "TypeScript", "JWT", "Nginx", "Docker Compose", "LiteLLM", "OpenRouter"],
+    "aiModel": "openrouter/anthropic/claude-sonnet-4-5",
     "deployment": "Render + Cloudflare R2"
   }
 }
