@@ -327,19 +327,29 @@ export default function JobFormPage() {
           )}
         </div>
 
-        {isEdit && !jobIsClosed && (
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm('Close this job opening? Candidates will no longer be able to apply.')) {
-                closeMutation.mutate()
-              }
-            }}
-            disabled={closeMutation.isPending}
-            className="flex-shrink-0 text-sm text-red-600 border border-red-300 px-3 py-1.5 rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
-          >
-            {closeMutation.isPending ? 'Closing…' : 'Close Job'}
-          </button>
+        {isEdit && (
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Link
+              to={`/jobs/${jobId}/candidates`}
+              className="text-sm text-blue-600 border border-blue-200 px-3 py-1.5 rounded-md hover:bg-blue-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              View Candidates
+            </Link>
+            {!jobIsClosed && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('Close this job opening? Candidates will no longer be able to apply.')) {
+                    closeMutation.mutate()
+                  }
+                }}
+                disabled={closeMutation.isPending}
+                className="text-sm text-red-600 border border-red-300 px-3 py-1.5 rounded-md hover:bg-red-50 disabled:opacity-50 transition-colors"
+              >
+                {closeMutation.isPending ? 'Closing…' : 'Close Job'}
+              </button>
+            )}
+          </div>
         )}
       </div>
 

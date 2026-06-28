@@ -55,66 +55,85 @@ function JobCard({ job }: { job: JobResponse }) {
   const navigate = useNavigate()
 
   return (
-    <button
-      type="button"
-      onClick={() => navigate(`/jobs/${job.id}`)}
-      className="w-full text-left bg-white border border-gray-200 rounded-lg p-5 hover:border-blue-300 hover:shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-    >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h2 className="text-base font-semibold text-gray-900 leading-snug flex-1 min-w-0" style={{ textWrap: 'balance' } as React.CSSProperties}>
-          {job.title}
-        </h2>
-        <span
-          className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-            job.status === 'open'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-gray-100 text-gray-500'
-          }`}
+    <div className="bg-white border border-gray-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all">
+      <button
+        type="button"
+        onClick={() => navigate(`/jobs/${job.id}/candidates`)}
+        className="w-full text-left p-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-t-lg"
+      >
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h2 className="text-base font-semibold text-gray-900 leading-snug flex-1 min-w-0" style={{ textWrap: 'balance' } as React.CSSProperties}>
+            {job.title}
+          </h2>
+          <span
+            className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+              job.status === 'open'
+                ? 'bg-green-100 text-green-700'
+                : 'bg-gray-100 text-gray-500'
+            }`}
+          >
+            {job.status}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-500 mb-4">
+          {job.department && (
+            <span className="flex items-center gap-1">
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16" />
+              </svg>
+              {job.department}
+            </span>
+          )}
+          {job.location && (
+            <span className="flex items-center gap-1">
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              {job.location}
+            </span>
+          )}
+          {job.remote_type && (
+            <span>{formatLabel(job.remote_type)}</span>
+          )}
+          {job.employment_type && (
+            <span>{formatLabel(job.employment_type)}</span>
+          )}
+          {job.experience_level && (
+            <span>{formatLabel(job.experience_level)}</span>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-400 tabular-nums">
+            {formatDate(job.created_at)}
+          </span>
+          {job.required_skills.length > 0 && (
+            <span className="text-xs text-gray-400">
+              {job.required_skills.length} skill{job.required_skills.length !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+      </button>
+
+      <div className="px-5 py-2.5 border-t border-gray-100 flex items-center justify-between">
+        <Link
+          to={`/jobs/${job.id}/candidates`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors focus:outline-none focus-visible:underline"
         >
-          {job.status}
-        </span>
+          View Candidates →
+        </Link>
+        <Link
+          to={`/jobs/${job.id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-sm text-gray-400 hover:text-gray-700 transition-colors focus:outline-none focus-visible:underline"
+        >
+          Edit
+        </Link>
       </div>
-
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-500 mb-4">
-        {job.department && (
-          <span className="flex items-center gap-1">
-            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16" />
-            </svg>
-            {job.department}
-          </span>
-        )}
-        {job.location && (
-          <span className="flex items-center gap-1">
-            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            {job.location}
-          </span>
-        )}
-        {job.remote_type && (
-          <span>{formatLabel(job.remote_type)}</span>
-        )}
-        {job.employment_type && (
-          <span>{formatLabel(job.employment_type)}</span>
-        )}
-        {job.experience_level && (
-          <span>{formatLabel(job.experience_level)}</span>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-400 tabular-nums">
-          {formatDate(job.created_at)}
-        </span>
-        {job.required_skills.length > 0 && (
-          <span className="text-xs text-gray-400">
-            {job.required_skills.length} skill{job.required_skills.length !== 1 ? 's' : ''}
-          </span>
-        )}
-      </div>
-    </button>
+    </div>
   )
 }
 
